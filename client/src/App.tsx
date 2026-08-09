@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import './App.css'
 import { useSession } from './lib/auth-client'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -10,7 +9,7 @@ import HomePage from './pages/HomePage'
 function RedirectIfAuthed({ children }: { children: ReactNode }) {
   const { data: session, isPending } = useSession()
 
-  if (isPending) return <p>Loading...</p>
+  if (isPending) return <p className="p-6 text-zinc-400">Loading...</p>
   if (session) return <Navigate to="/" replace />
 
   return children
