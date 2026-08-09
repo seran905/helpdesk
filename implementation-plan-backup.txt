@@ -1,0 +1,74 @@
+# Implementation Plan
+
+## Phase 0 — Project Setup
+- [ ] Set up repo structure (separate `frontend/` and `backend/` projects)
+- [ ] Scaffold backend: Node.js + Express + TypeScript, linting/formatting config
+- [ ] Scaffold frontend: React + TypeScript, Tailwind CSS, React Router
+- [ ] Set up PostgreSQL locally (Docker Compose: postgres + backend + frontend)
+- [ ] Set up Prisma, connect to local database
+- [ ] Environment variable management (`.env`, `.env.example`) for both projects
+
+## Phase 1 — Data Model & Auth
+- [ ] Define Prisma schema: `User` (role: admin/agent), `Session`, `Ticket` (status, category)
+- [ ] Run initial migration
+- [ ] Seed script: create the initial admin account on first deploy
+- [ ] Implement database session auth: session table, httpOnly cookie issuance, session validation middleware
+- [ ] Login / logout endpoints
+- [ ] Role-based authorization middleware (admin vs. agent)
+- [ ] Endpoint: admin creates/deactivates agent accounts
+- [ ] Frontend: login page, auth context, protected routes
+
+## Phase 2 — Core Ticket CRUD
+- [ ] Backend: create/list/get/update-status endpoints for tickets
+- [ ] Backend: manual category assignment (fallback before AI classification exists)
+- [ ] Backend: ticket assignment to agent
+- [ ] Frontend: dashboard — ticket list with status/category filters
+- [ ] Frontend: ticket detail view (status, category, assigned agent, content)
+- [ ] Frontend: status transition controls (open → resolved → closed)
+
+## Phase 3 — Email Ingestion & Outbound Sending
+- [ ] Configure inbound parse webhook (SendGrid/Mailgun) → backend endpoint
+- [ ] Parse inbound email into a new ticket (sender, subject, body)
+- [ ] Handle reply-to-existing-ticket vs. new-ticket threading
+- [ ] Outbound sending integration (SendGrid/Mailgun) for agent/AI replies
+- [ ] Store sent replies against the ticket for history
+
+## Phase 4 — AI Classification & Summaries
+- [ ] Backend: Anthropic API client (server-side only)
+- [ ] Classification service: categorize ticket into general/technical/refund
+- [ ] Auto-run classification on ticket creation, store result
+- [ ] Summary service: generate a short AI summary per ticket/thread
+- [ ] Frontend: display category + summary on dashboard and detail view
+- [ ] Allow agent to override AI-assigned category
+
+## Phase 5 — Knowledge Base & Suggested Replies
+- [ ] Define knowledge base storage (table of articles/snippets)
+- [ ] Admin CRUD for knowledge base entries
+- [ ] Suggested-reply service: generate a draft reply from ticket content + KB
+- [ ] Frontend: show suggested reply in ticket detail, editable before sending
+- [ ] Agent action: edit and send, or send as-is
+- [ ] Log whether a sent reply was AI-as-is, AI-edited, or fully manual
+
+## Phase 6 — Dashboard & Agent Workflow Polish
+- [ ] Dashboard sorting/filtering by status, category, assigned agent
+- [ ] Unassigned-ticket queue view
+- [ ] Basic notification/indicator for new tickets
+
+## Phase 7 — Admin & User Management UI
+- [ ] Admin panel: list agents, create agent, deactivate agent
+- [ ] Role management UI
+
+## Phase 8 — Hardening & Deployment
+- [ ] Input validation (Zod) on all endpoints
+- [ ] Centralized error handling and logging
+- [ ] Rate limiting on auth and inbound webhook endpoints
+- [ ] Session expiry + cleanup job
+- [ ] Dockerize frontend and backend
+- [ ] CI pipeline (lint, typecheck, tests)
+- [ ] Deploy to cloud provider
+- [ ] Basic monitoring/alerting
+
+## Phase 9 — Metrics (stretch)
+- [ ] Track classification accuracy / agent override rate
+- [ ] Track response time and ticket deflection rate
+- [ ] Metrics view on dashboard
