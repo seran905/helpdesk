@@ -9,7 +9,7 @@ import HomePage from './pages/HomePage'
 function RedirectIfAuthed({ children }: { children: ReactNode }) {
   const { data: session, isPending } = useSession()
 
-  if (isPending) return <p className="p-6 text-zinc-400">Loading...</p>
+  if (isPending) return <p className="p-6 text-muted-foreground">Loading...</p>
   if (session) return <Navigate to="/" replace />
 
   return children

@@ -23,18 +23,18 @@ function HomePage() {
   }[status]
 
   const statusColors = {
-    pending: 'border-purple-500/25 bg-purple-500/10 text-purple-600 dark:text-purple-400',
+    pending: 'border-primary/25 bg-primary/10 text-primary',
     ok: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-    error: 'border-red-500/25 bg-red-500/10 text-red-500',
+    error: 'border-destructive/25 bg-destructive/10 text-destructive',
   }[status]
 
   return (
     <div className="flex flex-grow flex-col items-center px-6 py-24">
       <div className="max-w-[480px] text-center">
-        <h1 className="text-[32px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+        <h1 className="text-[32px] font-semibold tracking-tight text-foreground">
           Welcome, {session?.user.name}
         </h1>
-        <p className="mt-2.5 mb-6 text-[15px] text-zinc-400">
+        <p className="mt-2.5 mb-6 text-[15px] text-muted-foreground">
           Here's what's happening with your helpdesk today.
         </p>
         <span
