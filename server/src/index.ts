@@ -8,8 +8,9 @@ import { requireAuth } from "./middleware/requireAuth.js";
 
 const app = express();
 const port = process.env.PORT ?? 3001;
+const clientUrl = process.env.CLIENT_URL ?? "http://localhost:5173";
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({ origin: clientUrl, credentials: true }));
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
