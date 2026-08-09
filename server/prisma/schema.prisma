@@ -23,8 +23,15 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
+  role Role
+
   @@unique([email])
   @@map("user")
+}
+
+enum Role {
+  admin
+  agent
 }
 
 model Session {
