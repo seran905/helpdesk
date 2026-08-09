@@ -199,6 +199,19 @@
   box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
+.field input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.field input[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 3px var(--danger-bg);
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 12px;
+}
+
 .login-error {
   display: flex;
   align-items: center;
