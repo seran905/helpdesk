@@ -5,6 +5,7 @@ import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
+import UsersPage from './pages/UsersPage'
 
 function RedirectIfAuthed({ children }: { children: ReactNode }) {
   const { data: session, isPending } = useSession()
@@ -30,6 +31,11 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
+          </Route>
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route element={<Layout />}>
+            <Route path="/users" element={<UsersPage />} />
           </Route>
         </Route>
       </Routes>
