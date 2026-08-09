@@ -5,6 +5,7 @@
 - [ ] Initialize monorepo structure (`/client`, `/server`)
 - [ ] Set up Express server with TypeScript
 - [ ] Set up React app with TypeScript
+- [ ] Set up PostgreSQL database
 
 ## Phase 2: Authentication
 
