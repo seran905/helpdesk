@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "../src/lib/env.js";
 import { auth } from "../src/lib/auth.js";
 import { prisma } from "../src/lib/prisma.js";
 import { Role } from "../src/generated/prisma/enums.js";
