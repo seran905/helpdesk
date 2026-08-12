@@ -12,10 +12,11 @@ This is an AI-powered ticket management system. See `project-scope.md` for the p
 
 ## Repository structure
 
-Two independent npm projects, not a workspace/monorepo — install and run each separately.
+Three independent npm projects, not a workspace/monorepo — install and run each separately.
 
 - `client/` — React 19 + TypeScript, built with Vite. UI components come from shadcn/ui (`components.json`, base style `base-rhea`, theme preset `b3mQUKE5I`, components under `client/src/components/ui/`, `@/*` path alias to `client/src/*`). Use `npx shadcn@latest add <component>` to add more; prefer shadcn's theme tokens (`bg-primary`, `text-foreground`, `border-border`, etc. from `client/src/index.css`) over hardcoded Tailwind colors so custom UI stays on-theme.
 - `server/` — Express + TypeScript, run with `tsx`, ESM (`"type": "module"`, `NodeNext` module resolution).
+- `e2e/` — Playwright E2E tests (see Testing below).
 
 The client calls the server directly over HTTP using a hardcoded base URL (`http://localhost:3001`, see `client/src/lib/auth-client.ts` and `client/src/pages/HomePage.tsx`) — there is no Vite dev proxy. The server allows this cross-origin access via `cors({ origin: clientUrl, credentials: true })`, where `clientUrl` comes from the `CLIENT_URL` env var and defaults to `http://localhost:5173`. **Gotcha:** if the Vite dev server ends up on a different port (e.g. 5173 already taken, so Vite falls back to 5174), the origin won't match and every request — including login — silently fails client-side with "Failed to reach the server". Fix by freeing/using port 5173, or setting `CLIENT_URL` to match.
 
@@ -47,5 +48,20 @@ Run from `server/`:
 - `npm run build` — compile TypeScript to `dist/`
 - `npm run start` — run the compiled server from `dist/`
 - `npx tsx prisma/seed.ts` — seed the initial admin user (needs `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `.env`)
+- `npm run test:db:setup` / `npm run test:db:seed` — migrate/seed the `helpdesk_test` database (needs `server/.env.test`; see Testing below)
 
-No test suite exists yet in either project.
+Run from `e2e/`:
+- `npm test` — run the Playwright suite (starts both dev servers itself against `helpdesk_test`; see Testing below)
+
+No unit/integration test suite exists yet in either project — see Testing below for E2E.
+
+## Testing
+
+E2E tests use Playwright, set up in `e2e/` (a third independent npm project — `npm install` there separately). No tests are written yet, just the harness: `e2e/playwright.config.ts`, `e2e/global-setup.ts`, `e2e/tests/`.
+
+- **Separate test database**: a `helpdesk_test` Postgres database (same local Postgres instance/credentials as dev, different DB name) keeps E2E runs from touching dev data. Its connection info lives in `server/.env.test` (gitignored, like `.env`) — `DATABASE_URL` pointing at `helpdesk_test`, plus its own `BETTER_AUTH_SECRET` and a seedable `ADMIN_EMAIL`/`ADMIN_PASSWORD`. If `helpdesk_test` doesn't exist yet on a new machine, create it manually (`CREATE DATABASE helpdesk_test;`) before running E2E.
+- **`server/package.json` has two test-DB scripts**: `test:db:setup` (loads `.env.test` and runs `prisma migrate deploy` against `helpdesk_test`) and `test:db:seed` (loads `.env.test` and runs the normal seed script against it). Both are safe to re-run — migrate is idempotent and seed no-ops if the admin already exists.
+- **`e2e/global-setup.ts`** runs those two scripts automatically before the test suite starts, so `helpdesk_test` is always migrated and seeded fresh going into a run.
+- **`e2e/playwright.config.ts`** loads `server/.env.test` into its own process env (`override: true`) before defining `webServer`, so when it spawns `npm run dev` in `server/`, that process inherits the test-DB env instead of `server/.env`. It spawns both dev servers itself (`webServer: [...]`, one entry for `server/`, one for `client/`) rather than expecting them to already be running.
+- **Port conflict gotcha**: because the client's API base URL is hardcoded to `http://localhost:3001` (see the port gotcha above), the E2E server must also run on 3001, and the E2E client on 5173 to match `CLIENT_URL`/CORS — the same ports the manually-run dev servers use. `reuseExistingServer` is `false` in the webServer config specifically so E2E never silently attaches to an already-running dev-DB-backed server. Practically: **stop any manually-running `npm run dev` in `client/`/`server/` before running `npm test` in `e2e/`**, or the E2E server will fail to bind port 3001.
+- Run with `npm test` from `e2e/` (runs `playwright test`).
