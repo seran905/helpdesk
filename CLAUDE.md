@@ -12,11 +12,10 @@ This is an AI-powered ticket management system. See `project-scope.md` for the p
 
 ## Repository structure
 
-Three independent npm projects, not a workspace/monorepo — install and run each separately.
+Two independent npm projects, not a workspace/monorepo — install and run each separately.
 
 - `client/` — React 19 + TypeScript, built with Vite. UI components come from shadcn/ui (`components.json`, base style `base-rhea`, theme preset `b3mQUKE5I`, components under `client/src/components/ui/`, `@/*` path alias to `client/src/*`). Use `npx shadcn@latest add <component>` to add more; prefer shadcn's theme tokens (`bg-primary`, `text-foreground`, `border-border`, etc. from `client/src/index.css`) over hardcoded Tailwind colors so custom UI stays on-theme.
 - `server/` — Express + TypeScript, run with `tsx`, ESM (`"type": "module"`, `NodeNext` module resolution).
-- `e2e/` — Playwright E2E tests; see `.claude/agents/e2e-test-writer.md` for the harness details and how to write/run tests.
 
 The client calls the server directly over HTTP using a hardcoded base URL (`http://localhost:3001`, see `client/src/lib/auth-client.ts` and `client/src/pages/HomePage.tsx`) — there is no Vite dev proxy. The server allows this cross-origin access via `cors({ origin: clientUrl, credentials: true })`, where `clientUrl` comes from the `CLIENT_URL` env var and defaults to `http://localhost:5173`. **Gotcha:** if the Vite dev server ends up on a different port (e.g. 5173 already taken, so Vite falls back to 5174), the origin won't match and every request — including login — silently fails client-side with "Failed to reach the server". Fix by freeing/using port 5173, or setting `CLIENT_URL` to match.
 
@@ -28,10 +27,7 @@ Auth is [better-auth](https://www.better-auth.com), backed by Postgres via the P
 
 - **Schema**: `User`/`Session`/`Account`/`Verification` models in `server/prisma/schema.prisma`, following better-auth's expected shape. `User.role` is a required `Role` enum (`admin` | `agent`) added as a better-auth `additionalFields` entry with `input: false` — it's readable but not settable through the auth API, so roles can only be assigned by seeding/editing the DB directly, never by a client request (prevents self-elevation).
 - **Server routes**: mounted at `app.all("/api/auth/*splat", toNodeHandler(auth))` in `server/src/index.ts`, **before** `app.use(express.json())`. Keep it in that order — better-auth's node handler parses the request body itself, so adding `express.json()` upstream of it will break auth requests.
-- **Protecting server routes**: wrap the handler with `requireAuth` (`server/src/middleware/requireAuth.ts`), which calls `auth.api.getSession()` and attaches `req.session`/`req.user`, or replies `401` if there's no session. See `/api/me` for the pattern. `/api/me` explicitly whitelists which `req.user` fields it returns rather than spreading the whole object, so nothing sensitive leaks if the user shape ever grows.
-- **Admin-only server routes**: chain `requireAuth` then `requireAdmin` (`server/src/middleware/requireAdmin.ts`, checks `req.user?.role === Role.admin`, replies `403`). `GET /api/users` (admin-only, lists users) is the first — and so far only — route using this pattern; it's what backs the `/users` page once it's wired up to fetch data.
-- **Rate limiting**: `server/src/lib/auth.ts` sets `rateLimit.enabled: process.env.NODE_ENV === "production"` (explicit, not relying on better-auth's own same-valued default) so local dev/test iteration isn't throttled. Global limit is 100 req/60s; `/sign-in/email` has a tighter `customRules` entry (5 req/60s) to blunt credential stuffing. Only takes effect with `NODE_ENV=production` set at runtime.
-- **Startup env validation**: `server/src/lib/env.ts` throws if `DATABASE_URL` or `BETTER_AUTH_SECRET` is missing; it's a side-effect-on-import module, imported first (right after `dotenv/config`) in both `server/src/index.ts` and `server/prisma/seed.ts` so it fires before Prisma/better-auth touch those vars.
+- **Protecting server routes**: wrap the handler with `requireAuth` (`server/src/middleware/requireAuth.ts`), which calls `auth.api.getSession()` and attaches `req.session`/`req.user`, or replies `401` if there's no session. See `/api/me` for the pattern.
 - **Client**: `client/src/lib/auth-client.ts` creates the better-auth React client (`baseURL: 'http://localhost:3001'`, hardcoded like elsewhere) with the `inferAdditionalFields` plugin so `role` is typed on `session.user`. Exports `useSession`, `signIn`, `signOut`. Note: `role` is declared as `{ type: 'string' }` in the plugin config, so `session.user.role` is typed as plain `string`, not the `'admin' | 'agent'` literal union — code branching on it (e.g. `allowedRoles` below) has to type against `string`.
 - **Client-side route gating**: `ProtectedRoute` (`client/src/components/ProtectedRoute.tsx`) reads `useSession()` and redirects to `/login` when there's no session; takes an optional `allowedRoles?: string[]` prop that redirects to `/` when the session's role isn't in the list (used to gate `/users` to `['admin']` in `App.tsx`). `RedirectIfAuthed` in `App.tsx` does the inverse of the no-session check on `/login` itself. All of this only gates rendering — it is not a substitute for server-side `requireAuth` checks, and there is no server-side role check yet for `/users`-related data.
 - Sessions are cookie-based (`better-auth.session_token`, `HttpOnly`, `SameSite=Lax`), which is why the server's `cors()` needs `credentials: true` and an exact origin match rather than a wildcard — see the `CLIENT_URL`/port gotcha above.
@@ -49,6 +45,4 @@ Run from `server/`:
 - `npm run start` — run the compiled server from `dist/`
 - `npx tsx prisma/seed.ts` — seed the initial admin user (needs `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `.env`)
 
-No unit/integration test suite exists yet in either project. E2E tests live in `e2e/` (Playwright) — see `.claude/agents/e2e-test-writer.md` for the harness (separate `helpdesk_test` database, port-conflict gotcha, how to run `npm test`) and for writing new specs.
-
-**Writing E2E tests**: delegate to the `e2e-test-writer` subagent (Agent tool) rather than writing or editing files under `e2e/tests/` directly — it already carries the harness context (test DB, seed data, port gotcha, locator conventions) so it doesn't need to be re-derived per task. Only write E2E specs directly if the subagent is unavailable or the user explicitly asks for it inline.
+No test suite exists yet in either project.
