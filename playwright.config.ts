@@ -17,9 +17,10 @@ const testClientUrl = `http://localhost:${TEST_CLIENT_PORT}`;
 
 export default defineConfig({
   testDir: './e2e',
+  outputDir: './e2e/test-results',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: 'html',
+  reporter: [['html', { outputFolder: './e2e/playwright-report' }]],
   globalSetup: './e2e/global-setup.ts',
   use: {
     baseURL: testClientUrl,
