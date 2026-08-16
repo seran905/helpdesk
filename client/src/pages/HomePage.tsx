@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSession } from '../lib/auth-client'
 
-const API_URL = 'http://localhost:3001'
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 type ApiStatus = 'pending' | 'ok' | 'error'
 

@@ -5,22 +5,30 @@ Playwright is installed and configured at the repo root (not inside `client/` or
 
 ## What runs, and against what database
 
-`playwright.config.ts` starts two `webServer` processes — `server/` on port 3001
-and `client/` on port 5173 — then `e2e/global-setup.ts` runs `prisma migrate
-deploy` and the seed script against the database in `server/.env.test`
-(`helpdesk_test`, not the normal dev `helpdesk` database). `migrate deploy`
-creates that database automatically the first time it runs.
+`playwright.config.ts` starts two `webServer` processes — `server/` on port
+**4001** and `client/` on port **4173** — deliberately different from the
+normal dev ports (3001/5173), so `npm run test:e2e` never has to fight over a
+port with a manually-running `npm run dev`. `e2e/global-setup.ts` then runs
+`prisma migrate deploy` and the seed script against the database in
+`server/.env.test` (`helpdesk_test`, not the normal dev `helpdesk` database).
+`migrate deploy` creates that database automatically the first time it runs.
 
-## Before running `npm run test:e2e`
+Because the client's API base URL isn't otherwise configurable
+(`client/src/lib/auth-client.ts` and `client/src/pages/HomePage.tsx` default
+to `http://localhost:3001`), the e2e client webServer entry sets
+`VITE_API_URL=http://localhost:4001` so the client built for e2e actually
+talks to the e2e server instead of the real dev one. The e2e server entry
+similarly overrides `PORT`, `CLIENT_URL`, and `BETTER_AUTH_URL` on top of
+whatever `server/.env.test` says, so CORS and better-auth's own base URL line
+up with the e2e client's port rather than the dev one.
 
-Stop any `npm run dev` you have running in `client/` and `server/` first.
+## Running `npm run test:e2e`
 
-The config uses `reuseExistingServer: false` on both servers, on purpose: if
-Playwright were allowed to attach to an already-running dev server instead of
-spawning its own, it would reuse whatever database that dev server was started
-against — silently defeating the point of having a separate test database.
-`false` means a server already occupying port 3001/5173 makes Playwright fail
-loudly instead of testing against the wrong data. Free the ports, then run.
+No need to stop your dev servers — e2e runs on its own ports. Both `webServer`
+entries use `reuseExistingServer: !process.env.CI`, so locally, a second
+`npm run test:e2e` reuses an already-running e2e server from a prior run
+(faster iteration while writing tests) instead of respawning it; in CI it
+always spawns fresh.
 
 ## Adding the first real test
 

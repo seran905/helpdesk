@@ -13,4 +13,7 @@ export default async function globalSetup(_config: FullConfig) {
 
   execSync('npx prisma migrate deploy', { cwd: serverDir, env, stdio: 'inherit' });
   execSync('npm run seed', { cwd: serverDir, env, stdio: 'inherit' });
+  // E2E-only fixture: an agent-role user, needed to exercise role gating
+  // (server/prisma/seed.ts intentionally only creates a single admin user).
+  execSync('npx tsx prisma/seed-e2e-agent.ts', { cwd: serverDir, env, stdio: 'inherit' });
 }

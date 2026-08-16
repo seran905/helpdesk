@@ -7,6 +7,14 @@ const testEnv = dotenv.parse(
   fs.readFileSync(path.resolve(__dirname, 'server/.env.test')),
 );
 
+// Dedicated ports for e2e, distinct from the normal dev ports (3001/5173),
+// so the suite never has to fight over a port with a manually-running dev
+// server. DB isolation still comes entirely from testEnv's DATABASE_URL.
+const TEST_SERVER_PORT = 4001;
+const TEST_CLIENT_PORT = 4173;
+const testServerUrl = `http://localhost:${TEST_SERVER_PORT}`;
+const testClientUrl = `http://localhost:${TEST_CLIENT_PORT}`;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -14,28 +22,44 @@ export default defineConfig({
   reporter: 'html',
   globalSetup: './e2e/global-setup.ts',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: testClientUrl,
     trace: 'on-first-retry',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup'],
+    },
   ],
   webServer: [
     {
       name: 'server',
       command: 'npm run dev',
       cwd: './server',
-      url: 'http://localhost:3001/api/health',
-      env: testEnv,
-      reuseExistingServer: false,
+      url: `${testServerUrl}/api/health`,
+      env: {
+        ...testEnv,
+        PORT: String(TEST_SERVER_PORT),
+        CLIENT_URL: testClientUrl,
+        BETTER_AUTH_URL: testServerUrl,
+      },
+      reuseExistingServer: !process.env.CI,
       timeout: 60_000,
     },
     {
       name: 'client',
-      command: 'npm run dev',
+      // --strictPort: fail instead of silently falling back to another port
+      // if TEST_CLIENT_PORT is somehow taken (same gotcha CLAUDE.md documents
+      // for the normal 5173 dev port, applied here too).
+      command: `npm run dev -- --port ${TEST_CLIENT_PORT} --strictPort`,
       cwd: './client',
-      url: 'http://localhost:5173',
-      reuseExistingServer: false,
+      url: testClientUrl,
+      env: {
+        VITE_API_URL: testServerUrl,
+      },
+      reuseExistingServer: !process.env.CI,
       timeout: 60_000,
     },
   ],
