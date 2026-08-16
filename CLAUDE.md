@@ -17,6 +17,8 @@ Two independent npm projects, not a workspace/monorepo — install and run each 
 - `client/` — React 19 + TypeScript, built with Vite. UI components come from shadcn/ui (`components.json`, base style `base-rhea`, theme preset `b3mQUKE5I`, components under `client/src/components/ui/`, `@/*` path alias to `client/src/*`). Use `npx shadcn@latest add <component>` to add more; prefer shadcn's theme tokens (`bg-primary`, `text-foreground`, `border-border`, etc. from `client/src/index.css`) over hardcoded Tailwind colors so custom UI stays on-theme.
 - `server/` — Express + TypeScript, run with `tsx`, ESM (`"type": "module"`, `NodeNext` module resolution).
 
+A third, root-level `package.json` also exists, but only for the Playwright E2E harness (see Testing below) — it doesn't make this a monorepo/workspace; `client/` and `server/` still install and run independently of it and of each other.
+
 The client calls the server directly over HTTP using a hardcoded base URL (`http://localhost:3001`, see `client/src/lib/auth-client.ts` and `client/src/pages/HomePage.tsx`) — there is no Vite dev proxy. The server allows this cross-origin access via `cors({ origin: clientUrl, credentials: true })`, where `clientUrl` comes from the `CLIENT_URL` env var and defaults to `http://localhost:5173`. **Gotcha:** if the Vite dev server ends up on a different port (e.g. 5173 already taken, so Vite falls back to 5174), the origin won't match and every request — including login — silently fails client-side with "Failed to reach the server". Fix by freeing/using port 5173, or setting `CLIENT_URL` to match.
 
 Neither dev server is managed by a process supervisor — there's no nodemon/pm2 config. `npm run dev` in `server/` has to be started (and restarted) manually in its own terminal; if it's not running, the client shows the same "Failed to reach the server" error.
@@ -31,6 +33,7 @@ Auth is [better-auth](https://www.better-auth.com), backed by Postgres via the P
 - **Client**: `client/src/lib/auth-client.ts` creates the better-auth React client (`baseURL: 'http://localhost:3001'`, hardcoded like elsewhere) with the `inferAdditionalFields` plugin so `role` is typed on `session.user`. Exports `useSession`, `signIn`, `signOut`. Note: `role` is declared as `{ type: 'string' }` in the plugin config, so `session.user.role` is typed as plain `string`, not the `'admin' | 'agent'` literal union — code branching on it (e.g. `allowedRoles` below) has to type against `string`.
 - **Client-side route gating**: `ProtectedRoute` (`client/src/components/ProtectedRoute.tsx`) reads `useSession()` and redirects to `/login` when there's no session; takes an optional `allowedRoles?: string[]` prop that redirects to `/` when the session's role isn't in the list (used to gate `/users` to `['admin']` in `App.tsx`). `RedirectIfAuthed` in `App.tsx` does the inverse of the no-session check on `/login` itself. All of this only gates rendering — it is not a substitute for server-side `requireAuth` checks, and there is no server-side role check yet for `/users`-related data.
 - Sessions are cookie-based (`better-auth.session_token`, `HttpOnly`, `SameSite=Lax`), which is why the server's `cors()` needs `credentials: true` and an exact origin match rather than a wildcard — see the `CLIENT_URL`/port gotcha above.
+- **Rate limiting**: better-auth's `rateLimit` (`server/src/lib/auth.ts`) is gated on `process.env.NODE_ENV === "production"` — off under `npm run dev` and under the Playwright e2e harness (neither sets `NODE_ENV`), on under `npm run start` (which sets `NODE_ENV=production`). When enabled: global limit `100`/60s, plus a stricter custom rule of `5`/60s on `/sign-in/email`.
 
 ## Commands
 
@@ -42,7 +45,16 @@ Run from `client/`:
 Run from `server/`:
 - `npm run dev` — start the Express server with `tsx watch` (http://localhost:3001)
 - `npm run build` — compile TypeScript to `dist/`
-- `npm run start` — run the compiled server from `dist/`
+- `npm run start` — run the compiled server from `dist/` (sets `NODE_ENV=production`, which also turns on auth rate limiting — see Authentication above)
 - `npx tsx prisma/seed.ts` — seed the initial admin user (needs `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `.env`)
 
-No test suite exists yet in either project.
+Run from repo root:
+- `npm run test:e2e` — run the Playwright E2E suite (`playwright.config.ts`)
+- `npm run test:e2e:ui` — same, with Playwright's UI mode
+- `npm run playwright:install` — install/update the Playwright browser binaries
+
+## Testing
+
+No unit/integration test suite exists yet in either project (`client/` has `vitest`/`@testing-library/react` installed as devDependencies, but no config or test files wire them up).
+
+A Playwright E2E harness exists at the repo root (`playwright.config.ts`, `e2e/`) — config and DB bootstrap only, no spec files yet (see `e2e/README.md` before adding the first one). It lives at the root rather than in `client/` or `server/` because it drives both: `webServer` starts the server (port 3001) and client (port 5173) dev processes, then `e2e/global-setup.ts` runs `prisma migrate deploy` + the seed script against the **separate** test database defined in `server/.env.test` (`helpdesk_test`, not the dev `helpdesk` DB) before any test runs. Both `webServer` entries use `reuseExistingServer: false` on purpose, so **`npm run dev` must be stopped in `client/` and `server/` before running `npm run test:e2e`** — otherwise Playwright would either fail to bind the port or (worse) risk reusing a dev-mode server pointed at the wrong database.

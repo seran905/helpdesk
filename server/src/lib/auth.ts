@@ -8,7 +8,7 @@ export const auth = betterAuth({
   emailAndPassword: { enabled: true, disableSignUp: true },
   trustedOrigins: [process.env.CLIENT_URL ?? "http://localhost:5173"],
   rateLimit: {
-    enabled: true,
+    enabled: process.env.NODE_ENV === "production",
     window: 60,
     max: 100,
     customRules: {
