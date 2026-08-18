@@ -1,20 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useSession } from '../lib/auth-client'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
+import { apiClient } from '../lib/api-client'
 
 type ApiStatus = 'pending' | 'ok' | 'error'
 
 function HomePage() {
   const { data: session } = useSession()
-  const [status, setStatus] = useState<ApiStatus>('pending')
+  const { data: health, isPending, isError } = useQuery({
+    queryKey: ['health'],
+    queryFn: () => apiClient.get('/api/health').then((res) => res.data),
+  })
 
-  useEffect(() => {
-    fetch(`${API_URL}/api/health`)
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status === 'ok' ? 'ok' : 'error'))
-      .catch(() => setStatus('error'))
-  }, [])
+  let status: ApiStatus = 'ok'
+  if (isPending) status = 'pending'
+  else if (isError || health.status !== 'ok') status = 'error'
 
   const statusLabel = {
     pending: 'Checking API status...',

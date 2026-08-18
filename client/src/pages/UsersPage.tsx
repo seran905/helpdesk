@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Table,
   TableBody,
@@ -7,8 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
+import { apiClient } from '@/lib/api-client'
 
 type User = {
   id: string
@@ -18,43 +17,34 @@ type User = {
   createdAt: string
 }
 
-type FetchStatus = 'pending' | 'ok' | 'error'
-
 const roleBadgeColors: Record<string, string> = {
   admin: 'border-primary/25 bg-primary/10 text-primary',
   agent: 'border-border bg-muted text-muted-foreground',
 }
 
 function UsersPage() {
-  const [status, setStatus] = useState<FetchStatus>('pending')
-  const [users, setUsers] = useState<User[]>([])
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/users`, { credentials: 'include' })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Request failed with ${res.status}`)
-        return res.json()
-      })
-      .then((data) => {
-        setUsers(data.users)
-        setStatus('ok')
-      })
-      .catch(() => setStatus('error'))
-  }, [])
+  const {
+    data: users,
+    isPending,
+    isError,
+  } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => apiClient.get('/api/users').then((res) => res.data.users as User[]),
+  })
 
   return (
     <div className="px-8 py-10">
       <h1 className="mb-6 text-[32px] font-semibold tracking-tight text-foreground">Users</h1>
 
-      {status === 'pending' && <p className="text-sm text-muted-foreground">Loading users...</p>}
+      {isPending && <p className="text-sm text-muted-foreground">Loading users...</p>}
 
-      {status === 'error' && <p className="text-sm text-destructive">Failed to load users.</p>}
+      {isError && <p className="text-sm text-destructive">Failed to load users.</p>}
 
-      {status === 'ok' && users.length === 0 && (
+      {!isPending && !isError && users.length === 0 && (
         <p className="text-sm text-muted-foreground">No users found.</p>
       )}
 
-      {status === 'ok' && users.length > 0 && (
+      {!isPending && !isError && users.length > 0 && (
         <div className="overflow-hidden rounded-md border border-border">
           <Table>
             <TableHeader>
