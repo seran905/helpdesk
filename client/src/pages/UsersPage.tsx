@@ -8,6 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { apiClient } from '@/lib/api-client'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type User = {
   id: string
@@ -36,7 +37,38 @@ function UsersPage() {
     <div className="px-8 py-10">
       <h1 className="mb-6 text-[32px] font-semibold tracking-tight text-foreground">Users</h1>
 
-      {isPending && <p className="text-sm text-muted-foreground">Loading users...</p>}
+      {isPending && (
+        <div className="overflow-hidden rounded-md border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Joined</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-40" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {isError && <p className="text-sm text-destructive">Failed to load users.</p>}
 

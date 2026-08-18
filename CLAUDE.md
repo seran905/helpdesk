@@ -42,6 +42,8 @@ Run from `client/`:
 - `npm run dev` — start the Vite dev server (http://localhost:5173)
 - `npm run build` — type-check (`tsc -b`) and build for production
 - `npm run lint` — lint with oxlint
+- `npm run test` — run all component tests once (`vitest run`)
+- `npm run test:watch` / `npm run test:write` — same test run, in Vitest's interactive watch mode; `test:write` is just an alias for `test:watch` under a name that matches when you'd reach for it (actively writing/iterating on a test)
 
 Run from `server/`:
 - `npm run dev` — start the Express server with `tsx watch` (http://localhost:3001)
@@ -56,7 +58,18 @@ Run from repo root:
 
 ## Testing
 
-No unit/integration test suite exists yet in either project (`client/` has `vitest`/`@testing-library/react` installed as devDependencies, but no config or test files wire them up).
+### Component tests (`client/`)
+
+`server/` has no unit/integration test suite yet. `client/` has component tests via Vitest + React Testing Library.
+
+- **Config**: `client/vitest.config.ts` (merges into `client/vite.config.ts` via `mergeConfig`, `environment: 'jsdom'`, `setupFiles: ['./src/test/setup.ts']` which imports `@testing-library/jest-dom/vitest` for the matcher extensions).
+- **Running**: from `client/`, `npm run test` runs the suite once; `npm run test:watch` (alias `npm run test:write`) runs it in interactive watch mode — reach for the watch/write variant while actively writing or iterating on a test, `test` for a one-shot check (e.g. before committing).
+- **Where tests live**: co-located as `*.test.tsx` next to the component under test (e.g. `client/src/pages/UsersPage.tsx` → `client/src/pages/UsersPage.test.tsx`).
+- **Render helpers**: a small `render<PageName>()` helper (wraps the page in a fresh `QueryClientProvider` with `retry: false`, so error-state assertions don't wait through TanStack Query's default retries, and calls Testing Library's `render`) lives in its own module under `client/src/test/` — e.g. `client/src/test/renderUsersPage.tsx` — and is imported into the matching `*.test.tsx` file rather than redefined inline. Add a new one alongside it (`render<PageName>.tsx`) for each new page under test, following the same shape.
+- **Mocking data**: mock `apiClient` from `client/src/lib/api-client.ts` with `vi.mock('@/lib/api-client', () => ({ apiClient: { get: vi.fn() } }))` at the top of the test file (`vi.mock` is hoisted, so this also covers the module graph pulled in through the `render<PageName>` helper), then set per-test return values with `vi.mocked(apiClient.get).mockResolvedValue(...)` / `mockRejectedValue(...)`, resetting in `beforeEach`.
+- **Assertions**: use `screen.findBy*`/`waitFor` for the async pending → settled transition rather than asserting synchronously; use `screen.getByRole`/`getByText` over test IDs where the markup already has an accessible role/text, matching the E2E suite's selector conventions below.
+
+### E2E tests (repo root)
 
 A Playwright E2E harness exists at the repo root (`playwright.config.ts`, `e2e/`) with real spec files under `e2e/` (login, protected-route/role gating, sign-out — see `e2e/README.md` for what's covered and what's intentionally skipped). It lives at the root rather than in `client/` or `server/` because it drives both: `webServer` starts the server and client dev processes on **dedicated e2e-only ports (4001/4173, not the normal 3001/5173)**, then `e2e/global-setup.ts` runs `prisma migrate deploy` + the seed script against the **separate** test database defined in `server/.env.test` (`helpdesk_test`, not the dev `helpdesk` DB) before any test runs. The client webServer entry sets `VITE_API_URL` to point at the e2e server port (see the `VITE_API_URL` note above); the server entry overrides `PORT`/`CLIENT_URL`/`BETTER_AUTH_URL` to match. Because the ports are dedicated to e2e rather than shared with dev, **`npm run test:e2e` does not require stopping `npm run dev`** — both can run at the same time.
 
