@@ -77,4 +77,11 @@ describe('UsersPage', () => {
 
     await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/api/users'))
   })
+
+  it('shows a "Create user" button above the user list', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { users: mockUsers } })
+    renderUsersPage()
+
+    expect(await screen.findByRole('button', { name: 'Create user' })).toBeInTheDocument()
+  })
 })

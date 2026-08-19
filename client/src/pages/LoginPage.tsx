@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 const loginSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
+  email: z.string().min(1, 'Email is required').pipe(z.email('Enter a valid email address')),
   password: z.string().min(1, 'Password is required'),
 })
 
