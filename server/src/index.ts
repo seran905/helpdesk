@@ -7,6 +7,7 @@ import { auth } from "./lib/auth.js";
 import { prisma } from "./lib/prisma.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { usersRouter } from "./routes/users.js";
+import { webhooksRouter } from "./routes/webhooks.js";
 
 const app = express();
 const port = process.env.PORT ?? 3001;
@@ -37,6 +38,7 @@ app.get("/api/me", requireAuth, (req, res) => {
 });
 
 app.use("/api/users", usersRouter);
+app.use("/api/webhooks", webhooksRouter);
 
 app.listen(port, async () => {
   await prisma.$connect();

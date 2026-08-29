@@ -13,16 +13,17 @@ datasource db {
 }
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
-  sessions      Session[]
-  accounts      Account[]
+  id              String    @id
+  name            String
+  email           String
+  emailVerified   Boolean   @default(false)
+  image           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  sessions        Session[]
+  accounts        Account[]
+  assignedTickets Ticket[]
 
   role Role
 
@@ -33,6 +34,51 @@ model User {
 enum Role {
   admin
   agent
+}
+
+model Ticket {
+  id                Int             @id @default(autoincrement())
+  subject           String
+  normalizedSubject String
+  status            TicketStatus    @default(open)
+  category          TicketCategory?
+  requesterEmail    String
+  requesterName     String
+  assignedToId      String?
+  assignedTo        User?           @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  messages          TicketMessage[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([requesterEmail, normalizedSubject])
+  @@index([assignedToId])
+  @@map("ticket")
+}
+
+model TicketMessage {
+  id                Int      @id @default(autoincrement())
+  ticketId          Int
+  ticket            Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderEmail       String
+  senderName        String
+  body              String
+  providerMessageId String   @unique
+  createdAt         DateTime @default(now())
+
+  @@index([ticketId])
+  @@map("ticket_message")
+}
+
+enum TicketStatus {
+  open
+  resolved
+  closed
+}
+
+enum TicketCategory {
+  general_question
+  technical_question
+  refund_request
 }
 
 model Session {

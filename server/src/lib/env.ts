@@ -1,4 +1,4 @@
-const required = ["DATABASE_URL", "BETTER_AUTH_SECRET"] as const;
+const required = ["DATABASE_URL", "BETTER_AUTH_SECRET", "INBOUND_EMAIL_WEBHOOK_SECRET"] as const;
 
 const missing = required.filter((key) => !process.env[key]);
 
