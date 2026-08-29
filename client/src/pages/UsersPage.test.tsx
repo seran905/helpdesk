@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { apiClient } from '@/lib/api-client'
 import { renderUsersPage } from '@/test/renderUsersPage'
 
@@ -83,5 +84,69 @@ describe('UsersPage', () => {
     renderUsersPage()
 
     expect(await screen.findByRole('button', { name: 'Create user' })).toBeInTheDocument()
+  })
+
+  it('opens the create user dialog when the button is clicked', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { users: mockUsers } })
+    const user = userEvent.setup()
+    renderUsersPage()
+
+    expect(screen.queryByRole('heading', { name: 'Create user' })).not.toBeInTheDocument()
+
+    await user.click(await screen.findByRole('button', { name: 'Create user' }))
+
+    expect(await screen.findByRole('heading', { name: 'Create user' })).toBeInTheDocument()
+  })
+
+  it('closes the create user dialog when clicking outside it', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { users: mockUsers } })
+    const user = userEvent.setup()
+    renderUsersPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Create user' }))
+    expect(await screen.findByRole('heading', { name: 'Create user' })).toBeInTheDocument()
+
+    const overlay = document.querySelector('[data-slot="dialog-overlay"]')
+    expect(overlay).not.toBeNull()
+    await user.click(overlay as Element)
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Create user' })).not.toBeInTheDocument(),
+    )
+  })
+
+  it('closes the create user dialog when pressing Escape', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { users: mockUsers } })
+    const user = userEvent.setup()
+    renderUsersPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Create user' }))
+    expect(await screen.findByRole('heading', { name: 'Create user' })).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Create user' })).not.toBeInTheDocument(),
+    )
+  })
+
+  it('shows an edit button for each user in the list', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { users: mockUsers } })
+    renderUsersPage()
+
+    expect(await screen.findByRole('button', { name: 'Edit Admin' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit Test Agent' })).toBeInTheDocument()
+  })
+
+  it('opens the edit dialog pre-populated for the clicked user', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { users: mockUsers } })
+    const user = userEvent.setup()
+    renderUsersPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Edit Test Agent' }))
+
+    expect(await screen.findByRole('heading', { name: 'Edit user' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Name')).toHaveValue('Test Agent')
+    expect(screen.getByLabelText('Email')).toHaveValue('agent@example.com')
   })
 })

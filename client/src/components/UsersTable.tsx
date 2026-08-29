@@ -1,3 +1,4 @@
+import EditUserDialog from '@/components/EditUserDialog'
 import {
   Table,
   TableBody,
@@ -38,6 +39,7 @@ function UsersTable({ users, isPending, isError }: UsersTableProps) {
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Joined</TableHead>
+              <TableHead className="w-px">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -54,6 +56,9 @@ function UsersTable({ users, isPending, isError }: UsersTableProps) {
                 </TableCell>
                 <TableCell>
                   <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-7 w-7 rounded-md" />
                 </TableCell>
               </TableRow>
             ))}
@@ -80,6 +85,7 @@ function UsersTable({ users, isPending, isError }: UsersTableProps) {
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Joined</TableHead>
+            <TableHead className="w-px">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -98,6 +104,9 @@ function UsersTable({ users, isPending, isError }: UsersTableProps) {
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {new Date(user.createdAt).toLocaleDateString()}
+              </TableCell>
+              <TableCell>
+                <EditUserDialog user={user} />
               </TableCell>
             </TableRow>
           ))}

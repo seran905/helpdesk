@@ -1,8 +1,9 @@
 import { render } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import CreateUserDialog from '@/components/CreateUserDialog'
+import EditUserDialog from '@/components/EditUserDialog'
+import type { User } from '@/components/UsersTable'
 
-export function renderCreateUserDialog() {
+export function renderEditUserDialog(user: User) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
@@ -10,7 +11,7 @@ export function renderCreateUserDialog() {
     queryClient,
     ...render(
       <QueryClientProvider client={queryClient}>
-        <CreateUserDialog />
+        <EditUserDialog user={user} />
       </QueryClientProvider>,
     ),
   }
