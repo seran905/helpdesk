@@ -45,19 +45,26 @@ ticketsRouter.get("/", requireAuth, async (req, res) => {
   const query = parseBody(ticketListQuerySchema, req.query, res);
   if (!query) return;
 
-  const tickets = await prisma.ticket.findMany({
-    where: buildWhere(query),
-    orderBy: buildOrderBy(query.sortBy, query.sortOrder),
-    select: {
-      id: true,
-      subject: true,
-      status: true,
-      category: true,
-      requesterEmail: true,
-      requesterName: true,
-      createdAt: true,
-      assignedTo: { select: { id: true, name: true } },
-    },
-  });
-  res.json({ tickets });
+  const where = buildWhere(query);
+
+  const [tickets, total] = await Promise.all([
+    prisma.ticket.findMany({
+      where,
+      orderBy: buildOrderBy(query.sortBy, query.sortOrder),
+      skip: query.pageIndex * query.pageSize,
+      take: query.pageSize,
+      select: {
+        id: true,
+        subject: true,
+        status: true,
+        category: true,
+        requesterEmail: true,
+        requesterName: true,
+        createdAt: true,
+        assignedTo: { select: { id: true, name: true } },
+      },
+    }),
+    prisma.ticket.count({ where }),
+  ]);
+  res.json({ tickets, total });
 });

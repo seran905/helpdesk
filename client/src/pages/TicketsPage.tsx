@@ -4,7 +4,9 @@ import type { SortingState } from '@tanstack/react-table'
 import { SortOrder, TicketSortField } from 'core'
 import TicketsTable, { type Ticket } from '@/components/TicketsTable'
 import TicketsToolbar from '@/components/TicketsToolbar'
+import TicketsPagination from '@/components/TicketsPagination'
 import { useTicketFilters } from '@/hooks/useTicketFilters'
+import { usePagination } from '@/hooks/usePagination'
 import { apiClient } from '@/lib/api-client'
 
 function TicketsPage() {
@@ -25,16 +27,22 @@ function TicketsPage() {
     filterParams,
   } = useTicketFilters()
 
-  const params = { sortBy, sortOrder, ...filterParams }
+  const { pageIndex, setPageIndex, pageSize, setPageSize } = usePagination(
+    JSON.stringify({ sortBy, sortOrder, ...filterParams }),
+  )
+
+  const params = { sortBy, sortOrder, ...filterParams, pageIndex, pageSize }
 
   const {
-    data: tickets,
+    data,
     isPending,
     isError,
   } = useQuery({
     queryKey: ['tickets', params],
     queryFn: () =>
-      apiClient.get('/api/tickets', { params }).then((res) => res.data.tickets as Ticket[]),
+      apiClient
+        .get('/api/tickets', { params })
+        .then((res) => res.data as { tickets: Ticket[]; total: number }),
   })
 
   return (
@@ -49,12 +57,21 @@ function TicketsPage() {
         onCategoryChange={setCategory}
       />
       <TicketsTable
-        tickets={tickets}
+        tickets={data?.tickets}
         isPending={isPending}
         isError={isError}
         sorting={sorting}
         onSortingChange={setSorting}
       />
+      {!isPending && !isError && (
+        <TicketsPagination
+          pageIndex={pageIndex}
+          pageSize={pageSize}
+          total={data?.total ?? 0}
+          onPageIndexChange={setPageIndex}
+          onPageSizeChange={setPageSize}
+        />
+      )}
     </div>
   )
 }

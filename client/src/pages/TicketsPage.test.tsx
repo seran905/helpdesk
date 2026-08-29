@@ -32,6 +32,8 @@ const mockTickets = [
   },
 ]
 
+const defaultParams = { sortBy: 'createdAt', sortOrder: 'desc', pageIndex: 0, pageSize: 10 }
+
 describe('TicketsPage', () => {
   beforeEach(() => {
     vi.mocked(apiClient.get).mockReset()
@@ -54,14 +56,16 @@ describe('TicketsPage', () => {
   })
 
   it('shows an empty state when there are no tickets', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: [] } })
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: [], total: 0 } })
     renderTicketsPage()
 
     expect(await screen.findByText('No tickets found.')).toBeInTheDocument()
   })
 
   it('renders each ticket with subject, requester, status, category, assignee, and created date', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { tickets: mockTickets, total: mockTickets.length },
+    })
     renderTicketsPage()
 
     expect(await screen.findByText('Cannot log in')).toBeInTheDocument()
@@ -82,18 +86,20 @@ describe('TicketsPage', () => {
   })
 
   it('fetches from /api/tickets sorted by createdAt desc by default', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { tickets: mockTickets, total: mockTickets.length },
+    })
     renderTicketsPage()
 
     await waitFor(() =>
-      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
-        params: { sortBy: 'createdAt', sortOrder: 'desc' },
-      }),
+      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', { params: defaultParams }),
     )
   })
 
   it('refetches with the clicked column when a sortable header is clicked', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { tickets: mockTickets, total: mockTickets.length },
+    })
     renderTicketsPage()
 
     const user = userEvent.setup()
@@ -103,7 +109,7 @@ describe('TicketsPage', () => {
 
     await waitFor(() =>
       expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
-        params: { sortBy: 'subject', sortOrder: 'asc' },
+        params: { ...defaultParams, sortBy: 'subject', sortOrder: 'asc' },
       }),
     )
 
@@ -111,13 +117,15 @@ describe('TicketsPage', () => {
 
     await waitFor(() =>
       expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
-        params: { sortBy: 'subject', sortOrder: 'desc' },
+        params: { ...defaultParams, sortBy: 'subject', sortOrder: 'desc' },
       }),
     )
   })
 
   it('refetches with a debounced search param when typing in the search box', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { tickets: mockTickets, total: mockTickets.length },
+    })
     renderTicketsPage()
 
     const user = userEvent.setup()
@@ -128,14 +136,16 @@ describe('TicketsPage', () => {
     await waitFor(
       () =>
         expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
-          params: { sortBy: 'createdAt', sortOrder: 'desc', search: 'refund' },
+          params: { ...defaultParams, search: 'refund' },
         }),
       { timeout: 2000 },
     )
   })
 
   it('refetches with a status param when a status filter is selected', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { tickets: mockTickets, total: mockTickets.length },
+    })
     renderTicketsPage()
 
     const user = userEvent.setup()
@@ -146,13 +156,15 @@ describe('TicketsPage', () => {
 
     await waitFor(() =>
       expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
-        params: { sortBy: 'createdAt', sortOrder: 'desc', status: 'resolved' },
+        params: { ...defaultParams, status: 'resolved' },
       }),
     )
   })
 
   it('refetches with a category param when the uncategorized filter is selected', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { tickets: mockTickets, total: mockTickets.length },
+    })
     renderTicketsPage()
 
     const user = userEvent.setup()
@@ -163,7 +175,94 @@ describe('TicketsPage', () => {
 
     await waitFor(() =>
       expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
-        params: { sortBy: 'createdAt', sortOrder: 'desc', category: 'uncategorized' },
+        params: { ...defaultParams, category: 'uncategorized' },
+      }),
+    )
+  })
+
+  it('shows the page count and disables Previous on the first page', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets, total: 25 } })
+    renderTicketsPage()
+
+    expect(await screen.findByText('Page 1 of 3')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
+  })
+
+  it('refetches with the next pageIndex when Next is clicked, and disables Next on the last page', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets, total: 25 } })
+    renderTicketsPage()
+
+    const user = userEvent.setup()
+    await screen.findByText('Page 1 of 3')
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+
+    await waitFor(() =>
+      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
+        params: { ...defaultParams, pageIndex: 1 },
+      }),
+    )
+    await screen.findByText('Page 2 of 3')
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByText('Page 3 of 3')
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+  })
+
+  it('resets to the first page when a filter changes', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets, total: 25 } })
+    renderTicketsPage()
+
+    const user = userEvent.setup()
+    await screen.findByText('Page 1 of 3')
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByText('Page 2 of 3')
+
+    await user.click(screen.getByRole('combobox', { name: 'Filter by status' }))
+    await user.click(await screen.findByRole('option', { name: 'Resolved' }))
+
+    await waitFor(() =>
+      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
+        params: { ...defaultParams, status: 'resolved', pageIndex: 0 },
+      }),
+    )
+  })
+
+  it('shows the current page size and offers 10/20/30 options', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets, total: 25 } })
+    renderTicketsPage()
+
+    const user = userEvent.setup()
+    await screen.findByText('Page 1 of 3')
+
+    expect(screen.getByRole('combobox', { name: 'Rows per page' })).toHaveTextContent(
+      '10 per page',
+    )
+
+    await user.click(screen.getByRole('combobox', { name: 'Rows per page' }))
+    expect(await screen.findByRole('option', { name: '10 per page' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '20 per page' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '30 per page' })).toBeInTheDocument()
+  })
+
+  it('refetches with the new pageSize and resets to the first page when it changes', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets, total: 25 } })
+    renderTicketsPage()
+
+    const user = userEvent.setup()
+    await screen.findByText('Page 1 of 3')
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByText('Page 2 of 3')
+
+    await user.click(screen.getByRole('combobox', { name: 'Rows per page' }))
+    await user.click(await screen.findByRole('option', { name: '30 per page' }))
+
+    await waitFor(() =>
+      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
+        params: { ...defaultParams, pageSize: 30, pageIndex: 0 },
       }),
     )
   })
