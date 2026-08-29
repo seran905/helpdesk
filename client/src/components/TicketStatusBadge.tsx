@@ -2,7 +2,8 @@ import { TicketStatus } from 'core'
 
 const statusBadgeColors: Record<TicketStatus, string> = {
   [TicketStatus.open]: 'border-primary/25 bg-primary/10 text-primary',
-  [TicketStatus.resolved]: 'border-border bg-muted text-muted-foreground',
+  [TicketStatus.resolved]:
+    'border-green-500/25 bg-green-500/10 text-green-600 dark:text-green-400',
   [TicketStatus.closed]: 'border-border bg-muted text-muted-foreground',
 }
 

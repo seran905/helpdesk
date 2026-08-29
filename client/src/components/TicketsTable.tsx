@@ -20,6 +20,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import TicketStatusBadge from '@/components/TicketStatusBadge'
+import TicketCategoryBadge from '@/components/TicketCategoryBadge'
 
 export type Ticket = {
   id: number
@@ -67,7 +68,7 @@ const columns = columnHelper.columns([
     cell: (info) => {
       const category = info.getValue()
       return category ? (
-        <span className="text-sm capitalize text-foreground">{category.replace(/_/g, ' ')}</span>
+        <TicketCategoryBadge category={category} />
       ) : (
         <span className="text-muted-foreground">—</span>
       )
