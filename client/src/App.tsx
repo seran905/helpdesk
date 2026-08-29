@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Role } from 'core'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useSession } from './lib/auth-client'
 import Layout from './components/Layout'
@@ -37,7 +38,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
             </Route>
           </Route>
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route element={<ProtectedRoute allowedRoles={[Role.admin]} />}>
             <Route element={<Layout />}>
               <Route path="/users" element={<UsersPage />} />
             </Route>

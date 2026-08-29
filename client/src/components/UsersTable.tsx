@@ -1,3 +1,5 @@
+import { Role } from 'core'
+import DeleteUserDialog from '@/components/DeleteUserDialog'
 import EditUserDialog from '@/components/EditUserDialog'
 import {
   Table,
@@ -13,13 +15,13 @@ export type User = {
   id: string
   name: string
   email: string
-  role: string
+  role: Role
   createdAt: string
 }
 
-const roleBadgeColors: Record<string, string> = {
-  admin: 'border-primary/25 bg-primary/10 text-primary',
-  agent: 'border-border bg-muted text-muted-foreground',
+const roleBadgeColors: Record<Role, string> = {
+  [Role.admin]: 'border-primary/25 bg-primary/10 text-primary',
+  [Role.agent]: 'border-border bg-muted text-muted-foreground',
 }
 
 type UsersTableProps = {
@@ -58,7 +60,10 @@ function UsersTable({ users, isPending, isError }: UsersTableProps) {
                   <Skeleton className="h-4 w-20" />
                 </TableCell>
                 <TableCell>
-                  <Skeleton className="h-7 w-7 rounded-md" />
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-7 w-7 rounded-md" />
+                    <Skeleton className="h-7 w-7 rounded-md" />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -96,7 +101,7 @@ function UsersTable({ users, isPending, isError }: UsersTableProps) {
               <TableCell>
                 <span
                   className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${
-                    roleBadgeColors[user.role] ?? roleBadgeColors.agent
+                    roleBadgeColors[user.role] ?? roleBadgeColors[Role.agent]
                   }`}
                 >
                   {user.role}
@@ -106,7 +111,10 @@ function UsersTable({ users, isPending, isError }: UsersTableProps) {
                 {new Date(user.createdAt).toLocaleDateString()}
               </TableCell>
               <TableCell>
-                <EditUserDialog user={user} />
+                <div className="flex items-center gap-1">
+                  <EditUserDialog user={user} />
+                  {user.role !== Role.admin && <DeleteUserDialog user={user} />}
+                </div>
               </TableCell>
             </TableRow>
           ))}

@@ -1,3 +1,4 @@
+import { Role } from 'core'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { signOut, useSession } from '../lib/auth-client'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -36,7 +37,7 @@ function NavBar() {
           <NavLink to="/" end className={navLinkClassName}>
             Home
           </NavLink>
-          {session?.user.role === 'admin' && (
+          {session?.user.role === Role.admin && (
             <NavLink to="/users" className={navLinkClassName}>
               Users
             </NavLink>

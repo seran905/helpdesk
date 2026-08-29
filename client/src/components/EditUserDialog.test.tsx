@@ -1,3 +1,4 @@
+import { Role } from 'core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -13,7 +14,7 @@ const mockUser: User = {
   id: '2',
   name: 'Test Agent',
   email: 'agent@example.com',
-  role: 'agent',
+  role: Role.agent,
   createdAt: '2026-08-10T00:00:00.000Z',
 }
 
