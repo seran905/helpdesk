@@ -1,12 +1,12 @@
 import { TicketCategory, TicketStatus } from 'core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { apiClient } from '@/lib/api-client'
 import { renderTicketDetailPage } from '@/test/renderTicketDetailPage'
 
 vi.mock('@/lib/api-client', () => ({
-  apiClient: { get: vi.fn() },
+  apiClient: { get: vi.fn(), patch: vi.fn() },
 }))
 
 const mockTicket = {
@@ -35,9 +35,23 @@ const mockTicket = {
   ],
 }
 
+const mockAgents = [
+  { id: 'u1', name: 'Agent Smith' },
+  { id: 'u2', name: 'Agent Jones' },
+]
+
+function mockGetResponses() {
+  vi.mocked(apiClient.get).mockImplementation((url: string) => {
+    if (url.startsWith('/api/tickets/')) return Promise.resolve({ data: { ticket: mockTicket } })
+    if (url === '/api/users/agents') return Promise.resolve({ data: { agents: mockAgents } })
+    return Promise.reject(new Error(`Unhandled GET ${url}`))
+  })
+}
+
 describe('TicketDetailPage', () => {
   beforeEach(() => {
     vi.mocked(apiClient.get).mockReset()
+    vi.mocked(apiClient.patch).mockReset()
   })
 
   it('shows a skeleton while the request is pending', () => {
@@ -120,5 +134,60 @@ describe('TicketDetailPage', () => {
 
     await user.click(screen.getByRole('link', { name: /back to tickets/i }))
     expect(await screen.findByText('Tickets list')).toBeInTheDocument()
+  })
+
+  it('shows the current assignee and lists agents to reassign to', async () => {
+    mockGetResponses()
+    renderTicketDetailPage()
+
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+    const trigger = screen.getByRole('combobox', { name: 'Assigned To' })
+    expect(trigger).toHaveTextContent('Agent Smith')
+
+    const user = userEvent.setup()
+    await user.click(trigger)
+
+    expect(await screen.findByRole('option', { name: 'Agent Jones' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Unassigned' })).toBeInTheDocument()
+  })
+
+  it('reassigns the ticket when a different agent is selected', async () => {
+    mockGetResponses()
+    vi.mocked(apiClient.patch).mockResolvedValue({
+      data: { ticket: { id: mockTicket.id, assignedTo: mockAgents[1] } },
+    })
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    await user.click(screen.getByRole('combobox', { name: 'Assigned To' }))
+    await user.click(await screen.findByRole('option', { name: 'Agent Jones' }))
+
+    await waitFor(() =>
+      expect(apiClient.patch).toHaveBeenCalledWith(`/api/tickets/${mockTicket.id}/assign`, {
+        assignedToId: 'u2',
+      }),
+    )
+  })
+
+  it('unassigns the ticket when "Unassigned" is selected', async () => {
+    mockGetResponses()
+    vi.mocked(apiClient.patch).mockResolvedValue({
+      data: { ticket: { id: mockTicket.id, assignedTo: null } },
+    })
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    await user.click(screen.getByRole('combobox', { name: 'Assigned To' }))
+    await user.click(await screen.findByRole('option', { name: 'Unassigned' }))
+
+    await waitFor(() =>
+      expect(apiClient.patch).toHaveBeenCalledWith(`/api/tickets/${mockTicket.id}/assign`, {
+        assignedToId: null,
+      }),
+    )
   })
 })

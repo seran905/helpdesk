@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { TicketCategory, TicketStatus } from 'core'
 import TicketStatusBadge from '@/components/TicketStatusBadge'
 import TicketCategoryBadge from '@/components/TicketCategoryBadge'
+import TicketAssigneeSelect from '@/components/TicketAssigneeSelect'
 import { Skeleton } from '@/components/ui/skeleton'
 import { apiClient } from '@/lib/api-client'
 
@@ -102,7 +103,10 @@ function TicketDetailPage() {
               </>
             }
           />
-          <DetailRow label="Assigned To" value={ticket.assignedTo?.name ?? 'Unassigned'} />
+          <DetailRow
+            label="Assigned To"
+            value={<TicketAssigneeSelect ticketId={String(ticket.id)} assignedTo={ticket.assignedTo} />}
+          />
         </div>
         <div className="space-y-3">
           <DetailRow label="Created" value={new Date(ticket.createdAt).toLocaleString()} />

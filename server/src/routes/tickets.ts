@@ -1,9 +1,16 @@
 import { Router } from "express";
-import { ticketListQuerySchema, TicketCategoryFilter, TicketSortField, type TicketListQuery } from "core";
+import {
+  assignTicketSchema,
+  ticketListQuerySchema,
+  TicketCategoryFilter,
+  TicketSortField,
+  type TicketListQuery,
+} from "core";
 import type { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { parseBody } from "../lib/validate.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { Role } from "../generated/prisma/enums.js";
 
 export const ticketsRouter = Router();
 
@@ -105,6 +112,39 @@ ticketsRouter.get("/:id", requireAuth, async (req, res) => {
     res.status(404).json({ error: "Ticket not found" });
     return;
   }
+
+  res.json({ ticket });
+});
+
+ticketsRouter.patch("/:id/assign", requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Invalid ticket id" });
+    return;
+  }
+
+  const data = parseBody(assignTicketSchema, req.body, res);
+  if (!data) return;
+
+  const existing = await prisma.ticket.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  if (data.assignedToId) {
+    const agent = await prisma.user.findUnique({ where: { id: data.assignedToId } });
+    if (!agent || agent.deletedAt || agent.role !== Role.agent) {
+      res.status(400).json({ error: "Assignee must be an active agent" });
+      return;
+    }
+  }
+
+  const ticket = await prisma.ticket.update({
+    where: { id },
+    data: { assignedToId: data.assignedToId },
+    select: { id: true, assignedTo: { select: { id: true, name: true } } },
+  });
 
   res.json({ ticket });
 });
