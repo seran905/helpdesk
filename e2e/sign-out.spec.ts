@@ -1,14 +1,31 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+import dotenv from 'dotenv';
+import fs from 'node:fs';
 import path from 'node:path';
 
-const adminAuthFile = path.resolve(__dirname, '.auth/admin.json');
+const testEnv = dotenv.parse(
+  fs.readFileSync(path.resolve(__dirname, '../server/.env.test')),
+);
 
-test.use({ storageState: adminAuthFile });
+// Signing out actually invalidates the session server-side, so this spec
+// must not reuse the shared e2e/.auth/admin.json storageState — every other
+// admin-authenticated spec (protected-routes, session-edge-cases,
+// user-management) depends on that session staying valid for the whole e2e
+// run. Logging in fresh here, the same way login.spec.ts does, means this
+// spec only ever destroys a session of its own.
+test.use({ storageState: { cookies: [], origins: [] } });
+
+async function loginAsAdmin(page: Page) {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(testEnv.ADMIN_EMAIL);
+  await page.getByLabel('Password').fill(testEnv.ADMIN_PASSWORD);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('heading', { name: 'Welcome, Admin' })).toBeVisible();
+}
 
 test.describe('Sign out', () => {
   test('clicking Sign out clears the session and redirects to /login', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Welcome, Admin' })).toBeVisible();
+    await loginAsAdmin(page);
 
     await page.getByRole('button', { name: 'Sign out' }).click();
 
@@ -19,8 +36,7 @@ test.describe('Sign out', () => {
   test('after signing out, navigating to / again redirects back to /login instead of showing stale UI', async ({
     page,
   }) => {
-    await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Welcome, Admin' })).toBeVisible();
+    await loginAsAdmin(page);
 
     await page.getByRole('button', { name: 'Sign out' }).click();
     await expect(page).toHaveURL('/login');
