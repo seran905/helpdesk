@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import {
   createColumnHelper,
   rowSortingFeature,
@@ -18,6 +19,7 @@ import {
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import TicketStatusBadge from '@/components/TicketStatusBadge'
 
 export type Ticket = {
   id: number
@@ -30,12 +32,6 @@ export type Ticket = {
   assignedTo: { id: string; name: string } | null
 }
 
-const statusBadgeColors: Record<TicketStatus, string> = {
-  [TicketStatus.open]: 'border-primary/25 bg-primary/10 text-primary',
-  [TicketStatus.resolved]: 'border-border bg-muted text-muted-foreground',
-  [TicketStatus.closed]: 'border-border bg-muted text-muted-foreground',
-}
-
 const features = tableFeatures({ rowSortingFeature })
 
 const columnHelper = createColumnHelper<typeof features, Ticket>()
@@ -44,7 +40,14 @@ const columns = columnHelper.columns([
   columnHelper.accessor('subject', {
     id: TicketSortField.subject,
     header: 'Subject',
-    cell: (info) => <span className="font-medium">{info.getValue()}</span>,
+    cell: (info) => (
+      <Link
+        to={`/tickets/${info.row.original.id}`}
+        className="font-medium text-foreground hover:text-primary hover:underline"
+      >
+        {info.getValue()}
+      </Link>
+    ),
   }),
   columnHelper.accessor('requesterName', {
     id: TicketSortField.requesterName,
@@ -59,18 +62,7 @@ const columns = columnHelper.columns([
   columnHelper.accessor('status', {
     id: TicketSortField.status,
     header: 'Status',
-    cell: (info) => {
-      const status = info.getValue()
-      return (
-        <span
-          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${
-            statusBadgeColors[status] ?? statusBadgeColors[TicketStatus.open]
-          }`}
-        >
-          {status}
-        </span>
-      )
-    },
+    cell: (info) => <TicketStatusBadge status={info.getValue()} />,
   }),
   columnHelper.accessor('category', {
     id: TicketSortField.category,

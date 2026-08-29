@@ -1,0 +1,105 @@
+import { TicketCategory, TicketStatus } from 'core'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { apiClient } from '@/lib/api-client'
+import { renderTicketDetailPage } from '@/test/renderTicketDetailPage'
+
+vi.mock('@/lib/api-client', () => ({
+  apiClient: { get: vi.fn() },
+}))
+
+const mockTicket = {
+  id: 1,
+  subject: 'Cannot log in',
+  status: TicketStatus.open,
+  category: TicketCategory.technical_question,
+  requesterEmail: 'jane@example.com',
+  requesterName: 'Jane Doe',
+  createdAt: '2026-08-29T00:00:00.000Z',
+  updatedAt: '2026-08-29T01:00:00.000Z',
+  assignedTo: { id: 'u1', name: 'Agent Smith' },
+  messages: [
+    {
+      id: 1,
+      senderName: 'Jane Doe',
+      senderEmail: 'jane@example.com',
+      body: "I can't log in to my account.",
+      createdAt: '2026-08-29T00:00:00.000Z',
+    },
+    {
+      id: 2,
+      senderName: 'Agent Smith',
+      senderEmail: 'agent@example.com',
+      body: 'Can you try resetting your password?',
+      createdAt: '2026-08-29T00:30:00.000Z',
+    },
+  ],
+}
+
+describe('TicketDetailPage', () => {
+  beforeEach(() => {
+    vi.mocked(apiClient.get).mockReset()
+  })
+
+  it('shows a skeleton while the request is pending', () => {
+    vi.mocked(apiClient.get).mockReturnValue(new Promise(() => {}))
+    const { container } = renderTicketDetailPage()
+
+    expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Cannot log in')).not.toBeInTheDocument()
+  })
+
+  it('shows an error message when the request fails', async () => {
+    vi.mocked(apiClient.get).mockRejectedValue(new Error('network error'))
+    renderTicketDetailPage()
+
+    expect(await screen.findByText('Failed to load ticket.')).toBeInTheDocument()
+  })
+
+  it('fetches the ticket by id from the URL', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { ticket: mockTicket } })
+    renderTicketDetailPage('42')
+
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+    expect(apiClient.get).toHaveBeenCalledWith('/api/tickets/42')
+  })
+
+  it('renders ticket details and the message thread', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { ticket: mockTicket } })
+    renderTicketDetailPage()
+
+    expect(await screen.findByRole('heading', { name: 'Cannot log in' })).toBeInTheDocument()
+    expect(screen.getByText(TicketStatus.open)).toBeInTheDocument()
+    expect(screen.getByText('technical question')).toBeInTheDocument()
+    expect(screen.getAllByText('Jane Doe').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('jane@example.com').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Agent Smith').length).toBeGreaterThan(0)
+
+    expect(screen.getByText("I can't log in to my account.")).toBeInTheDocument()
+    expect(screen.getByText('Can you try resetting your password?')).toBeInTheDocument()
+  })
+
+  it('shows an unassigned/uncategorized fallback when those fields are unset', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { ticket: { ...mockTicket, category: null, assignedTo: null, messages: [] } },
+    })
+    renderTicketDetailPage()
+
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+    expect(screen.getByText('Unassigned')).toBeInTheDocument()
+    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.getByText('No messages yet.')).toBeInTheDocument()
+  })
+
+  it('navigates back to the tickets list via the back link', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { ticket: mockTicket } })
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    await user.click(screen.getByRole('link', { name: /back to tickets/i }))
+    expect(await screen.findByText('Tickets list')).toBeInTheDocument()
+  })
+})
