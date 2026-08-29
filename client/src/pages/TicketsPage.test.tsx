@@ -1,6 +1,7 @@
 import { TicketCategory, TicketStatus } from 'core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { apiClient } from '@/lib/api-client'
 import { renderTicketsPage } from '@/test/renderTicketsPage'
 
@@ -80,10 +81,38 @@ describe('TicketsPage', () => {
     expect(screen.getByText('Unassigned')).toBeInTheDocument()
   })
 
-  it('fetches from /api/tickets', async () => {
+  it('fetches from /api/tickets sorted by createdAt desc by default', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
     renderTicketsPage()
 
-    await waitFor(() => expect(apiClient.get).toHaveBeenCalledWith('/api/tickets'))
+    await waitFor(() =>
+      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
+        params: { sortBy: 'createdAt', sortOrder: 'desc' },
+      }),
+    )
+  })
+
+  it('refetches with the clicked column when a sortable header is clicked', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
+    renderTicketsPage()
+
+    const user = userEvent.setup()
+    await screen.findByText('Cannot log in')
+
+    await user.click(screen.getByRole('button', { name: /subject/i }))
+
+    await waitFor(() =>
+      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
+        params: { sortBy: 'subject', sortOrder: 'asc' },
+      }),
+    )
+
+    await user.click(screen.getByRole('button', { name: /subject/i }))
+
+    await waitFor(() =>
+      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
+        params: { sortBy: 'subject', sortOrder: 'desc' },
+      }),
+    )
   })
 })

@@ -1,4 +1,13 @@
-import { TicketCategory, TicketStatus } from 'core'
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
+import {
+  createColumnHelper,
+  rowSortingFeature,
+  tableFeatures,
+  useTable,
+  type OnChangeFn,
+  type SortingState,
+} from '@tanstack/react-table'
+import { TicketCategory, TicketSortField, TicketStatus } from 'core'
 import {
   Table,
   TableBody,
@@ -8,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 
 export type Ticket = {
   id: number
@@ -26,25 +36,107 @@ const statusBadgeColors: Record<TicketStatus, string> = {
   [TicketStatus.closed]: 'border-border bg-muted text-muted-foreground',
 }
 
+const features = tableFeatures({ rowSortingFeature })
+
+const columnHelper = createColumnHelper<typeof features, Ticket>()
+
+const columns = columnHelper.columns([
+  columnHelper.accessor('subject', {
+    id: TicketSortField.subject,
+    header: 'Subject',
+    cell: (info) => <span className="font-medium">{info.getValue()}</span>,
+  }),
+  columnHelper.accessor('requesterName', {
+    id: TicketSortField.requesterName,
+    header: 'Requester',
+    cell: (info) => (
+      <div className="flex flex-col">
+        <span>{info.getValue()}</span>
+        <span className="text-xs text-muted-foreground">{info.row.original.requesterEmail}</span>
+      </div>
+    ),
+  }),
+  columnHelper.accessor('status', {
+    id: TicketSortField.status,
+    header: 'Status',
+    cell: (info) => {
+      const status = info.getValue()
+      return (
+        <span
+          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${
+            statusBadgeColors[status] ?? statusBadgeColors[TicketStatus.open]
+          }`}
+        >
+          {status}
+        </span>
+      )
+    },
+  }),
+  columnHelper.accessor('category', {
+    id: TicketSortField.category,
+    header: 'Category',
+    cell: (info) => {
+      const category = info.getValue()
+      return category ? (
+        <span className="text-sm capitalize text-foreground">{category.replace(/_/g, ' ')}</span>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      )
+    },
+  }),
+  columnHelper.accessor((row) => row.assignedTo?.name, {
+    id: TicketSortField.assignedTo,
+    header: 'Assigned To',
+    cell: (info) => (
+      <span className="text-muted-foreground">{info.getValue() ?? 'Unassigned'}</span>
+    ),
+  }),
+  columnHelper.accessor('createdAt', {
+    id: TicketSortField.createdAt,
+    header: 'Created',
+    cell: (info) => (
+      <span className="text-muted-foreground">{new Date(info.getValue()).toLocaleDateString()}</span>
+    ),
+  }),
+])
+
+const columnHeaders = [
+  'Subject',
+  'Requester',
+  'Status',
+  'Category',
+  'Assigned To',
+  'Created',
+]
+
 type TicketsTableProps = {
   tickets: Ticket[] | undefined
   isPending: boolean
   isError: boolean
+  sorting: SortingState
+  onSortingChange: OnChangeFn<SortingState>
 }
 
-function TicketsTable({ tickets, isPending, isError }: TicketsTableProps) {
+function TicketsTable({ tickets, isPending, isError, sorting, onSortingChange }: TicketsTableProps) {
+  const table = useTable({
+    features,
+    columns,
+    data: tickets ?? [],
+    manualSorting: true,
+    enableMultiSort: false,
+    state: { sorting },
+    onSortingChange,
+  })
+
   if (isPending) {
     return (
       <div className="overflow-hidden rounded-md border border-border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Subject</TableHead>
-              <TableHead>Requester</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Assigned To</TableHead>
-              <TableHead>Created</TableHead>
+              {columnHeaders.map((header) => (
+                <TableHead key={header}>{header}</TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -88,49 +180,41 @@ function TicketsTable({ tickets, isPending, isError }: TicketsTableProps) {
     <div className="overflow-hidden rounded-md border border-border">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Subject</TableHead>
-            <TableHead>Requester</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Assigned To</TableHead>
-            <TableHead>Created</TableHead>
-          </TableRow>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                const sortDirection = header.column.getIsSorted()
+                return (
+                  <TableHead key={header.id}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-3 h-7 px-3 text-xs font-medium text-foreground hover:text-foreground"
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      <table.FlexRender header={header} />
+                      {sortDirection === 'asc' ? (
+                        <ArrowUp />
+                      ) : sortDirection === 'desc' ? (
+                        <ArrowDown />
+                      ) : (
+                        <ArrowUpDown className="opacity-50" />
+                      )}
+                    </Button>
+                  </TableHead>
+                )
+              })}
+            </TableRow>
+          ))}
         </TableHeader>
         <TableBody>
-          {tickets.map((ticket) => (
-            <TableRow key={ticket.id}>
-              <TableCell className="font-medium">{ticket.subject}</TableCell>
-              <TableCell>
-                <div className="flex flex-col">
-                  <span>{ticket.requesterName}</span>
-                  <span className="text-xs text-muted-foreground">{ticket.requesterEmail}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <span
-                  className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${
-                    statusBadgeColors[ticket.status] ?? statusBadgeColors[TicketStatus.open]
-                  }`}
-                >
-                  {ticket.status}
-                </span>
-              </TableCell>
-              <TableCell>
-                {ticket.category ? (
-                  <span className="text-sm capitalize text-foreground">
-                    {ticket.category.replace(/_/g, ' ')}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {ticket.assignedTo?.name ?? 'Unassigned'}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {new Date(ticket.createdAt).toLocaleDateString()}
-              </TableCell>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow key={row.id}>
+              {row.getAllCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  <table.FlexRender cell={cell} />
+                </TableCell>
+              ))}
             </TableRow>
           ))}
         </TableBody>
