@@ -37,6 +37,9 @@ function NavBar() {
           <NavLink to="/" end className={navLinkClassName}>
             Home
           </NavLink>
+          <NavLink to="/tickets" className={navLinkClassName}>
+            Tickets
+          </NavLink>
           {session?.user.role === Role.admin && (
             <NavLink to="/users" className={navLinkClassName}>
               Users

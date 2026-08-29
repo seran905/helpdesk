@@ -7,6 +7,7 @@ import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import HomePage from './pages/HomePage'
+import TicketsPage from './pages/TicketsPage'
 import UsersPage from './pages/UsersPage'
 
 const queryClient = new QueryClient()
@@ -36,6 +37,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<HomePage />} />
+              <Route path="/tickets" element={<TicketsPage />} />
             </Route>
           </Route>
           <Route element={<ProtectedRoute allowedRoles={[Role.admin]} />}>
