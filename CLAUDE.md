@@ -67,6 +67,8 @@ Run from repo root:
 
 ## Testing
 
+**Strategy**: prefer component tests for new coverage going forward. Reach for e2e only when a component test genuinely can't cover the behavior — cross-app flows spanning client+server (auth/session/cookie behavior, role gating enforced server-side, multi-step flows like the inbound-email-to-ticket webhook feeding the tickets list) — not as the default for every new page or feature.
+
 ### Component tests (`client/`)
 
 `server/` has no unit/integration test suite yet. `client/` has component tests via Vitest + React Testing Library.
