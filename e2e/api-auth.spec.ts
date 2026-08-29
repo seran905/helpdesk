@@ -68,7 +68,7 @@ test.describe('Authenticated as agent', () => {
     expect(response.status()).toBe(200);
     const body = await response.json();
     expect(body.user.role).toBe('agent');
-    expect(body.user.email).toBe('agent@example.com');
+    expect(body.user.email).toBe(testEnv.AGENT_EMAIL);
   });
 
   test('GET /api/users returns 403 — admin-only list is forbidden to agents', async ({

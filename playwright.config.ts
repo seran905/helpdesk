@@ -10,9 +10,12 @@ const testEnv = dotenv.parse(
 // Dedicated ports for e2e, distinct from the normal dev ports (3001/5173),
 // so the suite never has to fight over a port with a manually-running dev
 // server. DB isolation still comes entirely from testEnv's DATABASE_URL.
-const TEST_SERVER_PORT = 4001;
+// The server's origin/port is read from TEST_API_URL in server/.env.test
+// (the single source of truth e2e specs that hit the server directly also
+// read from), rather than hardcoded here and duplicated in those specs.
+const testServerUrl = testEnv.TEST_API_URL;
+const TEST_SERVER_PORT = new URL(testServerUrl).port;
 const TEST_CLIENT_PORT = 4173;
-const testServerUrl = `http://localhost:${TEST_SERVER_PORT}`;
 const testClientUrl = `http://localhost:${TEST_CLIENT_PORT}`;
 
 export default defineConfig({

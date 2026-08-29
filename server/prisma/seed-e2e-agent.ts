@@ -8,10 +8,14 @@ import { Role } from "../src/generated/prisma/enums.js";
 // user (from ADMIN_EMAIL/ADMIN_PASSWORD), so this script exists purely to
 // give the e2e suite an agent-role user to test role gating against. It
 // only ever runs against the isolated helpdesk_test database (see
-// e2e/global-setup.ts), never against a real dev/production database, so
-// hardcoded credentials here are fine.
-const email = "agent@example.com";
-const password = "password123";
+// e2e/global-setup.ts). Credentials come from AGENT_EMAIL/AGENT_PASSWORD in
+// server/.env.test, the same file e2e/agent-auth.setup.ts reads them from.
+const email = process.env.AGENT_EMAIL;
+const password = process.env.AGENT_PASSWORD;
+
+if (!email || !password) {
+  throw new Error("AGENT_EMAIL and AGENT_PASSWORD must be set to seed the e2e agent user");
+}
 
 const ctx = await auth.$context;
 

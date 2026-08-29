@@ -10,11 +10,12 @@ const testEnv = dotenv.parse(
 // These tests hit the server directly rather than through the client, so
 // they need the server's own origin, not the client baseURL configured in
 // playwright.config.ts (`use.baseURL`, which points at the client on 4173).
-// 4001 is the dedicated e2e server port hardcoded in playwright.config.ts's
-// TEST_SERVER_PORT.
-const API_URL = 'http://localhost:4001';
+// TEST_API_URL comes from server/.env.test — the same value
+// playwright.config.ts derives TEST_SERVER_PORT from — so this and the
+// config never drift out of sync.
+const API_URL = testEnv.TEST_API_URL;
 const WEBHOOK_PATH = `${API_URL}/api/webhooks/inbound-email`;
-const SECRET_HEADER = 'x-webhook-secret';
+const WEBHOOK_SECRET_HEADER = testEnv.INBOUND_EMAIL_WEBHOOK_SECRET_HEADER;
 
 function makePayload(suffix: string, overrides: Partial<Record<string, string>> = {}) {
   return {
@@ -37,7 +38,7 @@ test.describe('POST /api/webhooks/inbound-email', () => {
     const payload = makePayload(suffix);
 
     const response = await request.post(WEBHOOK_PATH, {
-      headers: { [SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET },
+      headers: { [WEBHOOK_SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET },
       data: payload,
     });
 
@@ -53,7 +54,7 @@ test.describe('POST /api/webhooks/inbound-email', () => {
 
   test('a reply from the same sender threads into the existing ticket', async ({ request }) => {
     const suffix = `${Date.now()}-${test.info().parallelIndex}-b`;
-    const headers = { [SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET };
+    const headers = { [WEBHOOK_SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET };
     const original = makePayload(suffix);
 
     const first = await request.post(WEBHOOK_PATH, { headers, data: original });
@@ -76,7 +77,7 @@ test.describe('POST /api/webhooks/inbound-email', () => {
     request,
   }) => {
     const suffix = `${Date.now()}-${test.info().parallelIndex}-c`;
-    const headers = { [SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET };
+    const headers = { [WEBHOOK_SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET };
     const original = makePayload(suffix);
 
     const first = await request.post(WEBHOOK_PATH, { headers, data: original });
@@ -105,7 +106,7 @@ test.describe('POST /api/webhooks/inbound-email', () => {
     // properly authenticated request with the same id must create a *new*
     // ticket (201), not be treated as a pre-existing duplicate (200).
     const authedResponse = await request.post(WEBHOOK_PATH, {
-      headers: { [SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET },
+      headers: { [WEBHOOK_SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET },
       data: payload,
     });
     expect(authedResponse.status()).toBe(201);
@@ -114,7 +115,7 @@ test.describe('POST /api/webhooks/inbound-email', () => {
   test('wrong shared-secret header returns 401', async ({ request }) => {
     const suffix = `${Date.now()}-${test.info().parallelIndex}-e`;
     const response = await request.post(WEBHOOK_PATH, {
-      headers: { [SECRET_HEADER]: 'not-the-real-secret' },
+      headers: { [WEBHOOK_SECRET_HEADER]: 'not-the-real-secret' },
       data: makePayload(suffix),
     });
 
@@ -125,7 +126,7 @@ test.describe('POST /api/webhooks/inbound-email', () => {
   test('duplicate providerMessageId is idempotent', async ({ request }) => {
     const suffix = `${Date.now()}-${test.info().parallelIndex}-f`;
     const payload = makePayload(suffix);
-    const headers = { [SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET };
+    const headers = { [WEBHOOK_SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET };
 
     const first = await request.post(WEBHOOK_PATH, { headers, data: payload });
     expect(first.status()).toBe(201);
@@ -142,7 +143,7 @@ test.describe('POST /api/webhooks/inbound-email', () => {
   test('invalid payload returns 400 with a validation message', async ({ request }) => {
     const suffix = `${Date.now()}-${test.info().parallelIndex}-g`;
     const response = await request.post(WEBHOOK_PATH, {
-      headers: { [SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET },
+      headers: { [WEBHOOK_SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET },
       data: makePayload(suffix, { senderEmail: 'not-an-email' }),
     });
 
