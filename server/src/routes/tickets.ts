@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ticketListQuerySchema, TicketSortField } from "core";
+import { ticketListQuerySchema, TicketCategoryFilter, TicketSortField, type TicketListQuery } from "core";
 import type { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { parseBody } from "../lib/validate.js";
@@ -17,11 +17,36 @@ function buildOrderBy(
   return { [sortBy]: sortOrder };
 }
 
+function buildWhere(query: TicketListQuery): Prisma.TicketWhereInput {
+  const where: Prisma.TicketWhereInput = {};
+
+  if (query.status) {
+    where.status = query.status;
+  }
+
+  if (query.category === TicketCategoryFilter.uncategorized) {
+    where.category = null;
+  } else if (query.category) {
+    where.category = query.category;
+  }
+
+  if (query.search) {
+    where.OR = [
+      { subject: { contains: query.search, mode: "insensitive" } },
+      { requesterName: { contains: query.search, mode: "insensitive" } },
+      { requesterEmail: { contains: query.search, mode: "insensitive" } },
+    ];
+  }
+
+  return where;
+}
+
 ticketsRouter.get("/", requireAuth, async (req, res) => {
   const query = parseBody(ticketListQuerySchema, req.query, res);
   if (!query) return;
 
   const tickets = await prisma.ticket.findMany({
+    where: buildWhere(query),
     orderBy: buildOrderBy(query.sortBy, query.sortOrder),
     select: {
       id: true,

@@ -115,4 +115,56 @@ describe('TicketsPage', () => {
       }),
     )
   })
+
+  it('refetches with a debounced search param when typing in the search box', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
+    renderTicketsPage()
+
+    const user = userEvent.setup()
+    await screen.findByText('Cannot log in')
+
+    await user.type(screen.getByPlaceholderText('Search subject or requester...'), 'refund')
+
+    await waitFor(
+      () =>
+        expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
+          params: { sortBy: 'createdAt', sortOrder: 'desc', search: 'refund' },
+        }),
+      { timeout: 2000 },
+    )
+  })
+
+  it('refetches with a status param when a status filter is selected', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
+    renderTicketsPage()
+
+    const user = userEvent.setup()
+    await screen.findByText('Cannot log in')
+
+    await user.click(screen.getByRole('combobox', { name: 'Filter by status' }))
+    await user.click(await screen.findByRole('option', { name: 'Resolved' }))
+
+    await waitFor(() =>
+      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
+        params: { sortBy: 'createdAt', sortOrder: 'desc', status: 'resolved' },
+      }),
+    )
+  })
+
+  it('refetches with a category param when the uncategorized filter is selected', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets } })
+    renderTicketsPage()
+
+    const user = userEvent.setup()
+    await screen.findByText('Cannot log in')
+
+    await user.click(screen.getByRole('combobox', { name: 'Filter by category' }))
+    await user.click(await screen.findByRole('option', { name: 'Uncategorized' }))
+
+    await waitFor(() =>
+      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
+        params: { sortBy: 'createdAt', sortOrder: 'desc', category: 'uncategorized' },
+      }),
+    )
+  })
 })

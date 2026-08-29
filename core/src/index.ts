@@ -4,4 +4,5 @@ export * from "./schemas/ticketListQuery.js";
 export * from "./role.js";
 export * from "./ticketStatus.js";
 export * from "./ticketCategory.js";
+export * from "./ticketCategoryFilter.js";
 export * from "./ticketSort.js";
