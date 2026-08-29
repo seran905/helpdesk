@@ -1,15 +1,16 @@
+import type { ReactNode } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { TicketCategory, TicketStatus } from 'core'
 import TicketStatusBadge from '@/components/TicketStatusBadge'
+import TicketCategoryBadge from '@/components/TicketCategoryBadge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { apiClient } from '@/lib/api-client'
 
 type TicketMessage = {
   id: number
   senderName: string
-  senderEmail: string
   body: string
   createdAt: string
 }
@@ -25,6 +26,15 @@ type TicketDetail = {
   updatedAt: string
   assignedTo: { id: string; name: string } | null
   messages: TicketMessage[]
+}
+
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="text-sm">
+      <span className="text-muted-foreground">{label}: </span>
+      <span className="text-foreground">{value}</span>
+    </div>
+  )
 }
 
 function BackLink() {
@@ -81,27 +91,25 @@ function TicketDetailPage() {
           {ticket.subject}
         </h1>
         <TicketStatusBadge status={ticket.status} />
+        <TicketCategoryBadge category={ticket.category} />
       </div>
 
-      <div className="mb-8 grid grid-cols-2 gap-x-8 gap-y-4 rounded-md border border-border bg-muted/40 p-4 text-sm sm:grid-cols-4">
-        <div>
-          <div className="text-xs text-muted-foreground">Requester</div>
-          <div className="text-foreground">{ticket.requesterName}</div>
-          <div className="text-xs text-muted-foreground">{ticket.requesterEmail}</div>
+      <div className="mb-8 grid grid-cols-1 gap-x-12 gap-y-3 sm:grid-cols-2">
+        <div className="space-y-3">
+          <DetailRow
+            label="Requester"
+            value={
+              <>
+                {ticket.requesterName}
+                <span className="ml-1.5 text-muted-foreground">({ticket.requesterEmail})</span>
+              </>
+            }
+          />
+          <DetailRow label="Assigned To" value={ticket.assignedTo?.name ?? 'Unassigned'} />
         </div>
-        <div>
-          <div className="text-xs text-muted-foreground">Category</div>
-          <div className="text-foreground capitalize">
-            {ticket.category ? ticket.category.replace(/_/g, ' ') : '—'}
-          </div>
-        </div>
-        <div>
-          <div className="text-xs text-muted-foreground">Assigned To</div>
-          <div className="text-foreground">{ticket.assignedTo?.name ?? 'Unassigned'}</div>
-        </div>
-        <div>
-          <div className="text-xs text-muted-foreground">Created</div>
-          <div className="text-foreground">{new Date(ticket.createdAt).toLocaleString()}</div>
+        <div className="space-y-3">
+          <DetailRow label="Created" value={new Date(ticket.createdAt).toLocaleString()} />
+          <DetailRow label="Updated" value={new Date(ticket.updatedAt).toLocaleString()} />
         </div>
       </div>
 
@@ -113,10 +121,7 @@ function TicketDetailPage() {
           {ticket.messages.map((message) => (
             <div key={message.id} className="rounded-md border border-border p-4">
               <div className="mb-2 flex items-baseline justify-between gap-4">
-                <div>
-                  <span className="font-medium text-foreground">{message.senderName}</span>{' '}
-                  <span className="text-xs text-muted-foreground">{message.senderEmail}</span>
-                </div>
+                <span className="font-medium text-foreground">{message.senderName}</span>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {new Date(message.createdAt).toLocaleString()}
                 </span>

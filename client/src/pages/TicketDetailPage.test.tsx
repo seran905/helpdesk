@@ -23,14 +23,12 @@ const mockTicket = {
     {
       id: 1,
       senderName: 'Jane Doe',
-      senderEmail: 'jane@example.com',
       body: "I can't log in to my account.",
       createdAt: '2026-08-29T00:00:00.000Z',
     },
     {
       id: 2,
       senderName: 'Agent Smith',
-      senderEmail: 'agent@example.com',
       body: 'Can you try resetting your password?',
       createdAt: '2026-08-29T00:30:00.000Z',
     },
@@ -73,14 +71,26 @@ describe('TicketDetailPage', () => {
     expect(screen.getByText(TicketStatus.open)).toBeInTheDocument()
     expect(screen.getByText('technical question')).toBeInTheDocument()
     expect(screen.getAllByText('Jane Doe').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('jane@example.com').length).toBeGreaterThan(0)
+    expect(screen.getByText(/jane@example\.com/)).toBeInTheDocument()
     expect(screen.getAllByText('Agent Smith').length).toBeGreaterThan(0)
 
     expect(screen.getByText("I can't log in to my account.")).toBeInTheDocument()
     expect(screen.getByText('Can you try resetting your password?')).toBeInTheDocument()
+
+    expect(screen.getByText(new Date(mockTicket.updatedAt).toLocaleString())).toBeInTheDocument()
   })
 
-  it('shows an unassigned/uncategorized fallback when those fields are unset', async () => {
+  it('does not show message sender emails', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { ticket: mockTicket } })
+    renderTicketDetailPage()
+
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+    expect(screen.queryByText(/agent@example\.com/)).not.toBeInTheDocument()
+    // jane@example.com is still shown once, as the requester's email in the meta row.
+    expect(screen.getAllByText(/jane@example\.com/)).toHaveLength(1)
+  })
+
+  it('shows an unassigned fallback and no category badge when those fields are unset', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({
       data: { ticket: { ...mockTicket, category: null, assignedTo: null, messages: [] } },
     })
@@ -88,8 +98,17 @@ describe('TicketDetailPage', () => {
 
     await screen.findByRole('heading', { name: 'Cannot log in' })
     expect(screen.getByText('Unassigned')).toBeInTheDocument()
-    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.queryByText('technical question')).not.toBeInTheDocument()
     expect(screen.getByText('No messages yet.')).toBeInTheDocument()
+  })
+
+  it('shows the category as a badge next to the subject', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { ticket: mockTicket } })
+    renderTicketDetailPage()
+
+    const heading = await screen.findByRole('heading', { name: 'Cannot log in' })
+    const badge = screen.getByText('technical question')
+    expect(heading.parentElement).toContainElement(badge)
   })
 
   it('navigates back to the tickets list via the back link', async () => {
