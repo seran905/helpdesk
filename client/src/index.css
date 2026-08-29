@@ -5,6 +5,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@utility link {
+    @apply text-foreground transition-colors hover:text-primary hover:underline;
+}
+
+@utility link-muted {
+    @apply text-muted-foreground transition-colors hover:text-foreground;
+}
+
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Inter Variable', sans-serif;
