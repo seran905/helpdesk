@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { signIn } from '../lib/auth-client'
 import { Button } from '@/components/ui/button'
+import ErrorMessage from '@/components/ErrorMessage'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -62,7 +63,7 @@ function LoginPage() {
                 aria-invalid={errors.email ? 'true' : 'false'}
                 {...register('email')}
               />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+              {errors.email && <ErrorMessage>{errors.email.message}</ErrorMessage>}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -74,7 +75,7 @@ function LoginPage() {
                 aria-invalid={errors.password ? 'true' : 'false'}
                 {...register('password')}
               />
-              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+              {errors.password && <ErrorMessage>{errors.password.message}</ErrorMessage>}
             </div>
 
             {errors.root && (

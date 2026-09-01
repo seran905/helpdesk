@@ -3,6 +3,7 @@ import { isAxiosError } from 'axios'
 import { Trash2Icon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import ErrorMessage from '@/components/ErrorMessage'
 import {
   Dialog,
   DialogClose,
@@ -68,7 +69,7 @@ function DeleteUserDialog({ user }: DeleteUserDialogProps) {
             Are you sure you want to delete {user.name}? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && <ErrorMessage>{error}</ErrorMessage>}
         <DialogFooter>
           <DialogClose render={<Button variant="outline">Cancel</Button>} />
           <Button variant="destructive" onClick={onConfirm} disabled={deleteUser.isPending}>

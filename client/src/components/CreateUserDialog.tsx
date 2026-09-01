@@ -5,6 +5,7 @@ import { createUserSchema, type CreateUserInput } from 'core'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
+import ErrorMessage from '@/components/ErrorMessage'
 import {
   Dialog,
   DialogContent,
@@ -77,7 +78,7 @@ function CreateUserDialog() {
               aria-invalid={errors.name ? 'true' : 'false'}
               {...register('name')}
             />
-            {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+            {errors.name && <ErrorMessage>{errors.name.message}</ErrorMessage>}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -89,7 +90,7 @@ function CreateUserDialog() {
               aria-invalid={errors.email ? 'true' : 'false'}
               {...register('email')}
             />
-            {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+            {errors.email && <ErrorMessage>{errors.email.message}</ErrorMessage>}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -101,9 +102,7 @@ function CreateUserDialog() {
               aria-invalid={errors.password ? 'true' : 'false'}
               {...register('password')}
             />
-            {errors.password && (
-              <p className="text-xs text-destructive">{errors.password.message}</p>
-            )}
+            {errors.password && <ErrorMessage>{errors.password.message}</ErrorMessage>}
           </div>
 
           {errors.root && (

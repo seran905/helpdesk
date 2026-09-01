@@ -4,6 +4,7 @@ import { isAxiosError } from 'axios'
 import { createReplySchema, type CreateReplyInput } from 'core'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
+import ErrorMessage from '@/components/ErrorMessage'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { apiClient } from '@/lib/api-client'
@@ -54,7 +55,7 @@ function ReplyForm({ ticketId }: ReplyFormProps) {
         aria-invalid={errors.body ? 'true' : 'false'}
         {...register('body')}
       />
-      {errors.body && <p className="text-xs text-destructive">{errors.body.message}</p>}
+      {errors.body && <ErrorMessage>{errors.body.message}</ErrorMessage>}
 
       {errors.root && (
         <p className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-[13px] text-destructive">
