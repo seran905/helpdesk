@@ -4,6 +4,7 @@ import type { Request, Response } from "express";
 import {
   assignTicketSchema,
   createReplySchema,
+  polishReplySchema,
   ticketListQuerySchema,
   updateTicketCategorySchema,
   updateTicketStatusSchema,
@@ -12,6 +13,7 @@ import {
   type TicketListQuery,
 } from "core";
 import type { Prisma } from "../generated/prisma/client.js";
+import { polishReply } from "../lib/replyPolisher.js";
 import { prisma } from "../lib/prisma.js";
 import { parseBody } from "../lib/validate.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -200,6 +202,32 @@ ticketsRouter.patch("/:id/category", requireAuth, async (req, res) => {
   });
 
   res.json({ ticket });
+});
+
+ticketsRouter.post("/:id/replies/polish", requireAuth, async (req, res) => {
+  const id = parseTicketId(req, res);
+  if (id === undefined) return;
+
+  const data = parseBody(polishReplySchema, req.body, res);
+  if (!data) return;
+
+  const existing = await prisma.ticket.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  try {
+    const body = await polishReply({
+      body: data.body,
+      requesterName: existing.requesterName,
+      agentName: req.user!.name,
+    });
+    res.json({ body });
+  } catch (err) {
+    console.error("Failed to polish reply:", err);
+    res.status(502).json({ error: "Failed to polish reply" });
+  }
 });
 
 ticketsRouter.post("/:id/replies", requireAuth, async (req, res) => {

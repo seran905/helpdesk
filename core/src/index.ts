@@ -5,6 +5,7 @@ export * from "./schemas/assignTicket.js";
 export * from "./schemas/updateTicketStatus.js";
 export * from "./schemas/updateTicketCategory.js";
 export * from "./schemas/createReply.js";
+export * from "./schemas/polishReply.js";
 export * from "./role.js";
 export * from "./ticketStatus.js";
 export * from "./ticketCategory.js";
