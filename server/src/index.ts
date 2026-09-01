@@ -9,6 +9,8 @@ import { requireAuth } from "./middleware/requireAuth.js";
 import { usersRouter } from "./routes/users.js";
 import { ticketsRouter } from "./routes/tickets.js";
 import { webhooksRouter } from "./routes/webhooks.js";
+import { boss } from "./lib/queue.js";
+import { startTicketClassificationWorker } from "./lib/ticketClassificationQueue.js";
 
 const app = express();
 const port = process.env.PORT ?? 3001;
@@ -46,4 +48,8 @@ app.listen(port, async () => {
   await prisma.$connect();
   console.log(`Server running on http://localhost:${port}`);
   console.log("Connected to database");
+
+  await boss.start();
+  await startTicketClassificationWorker();
+  console.log("Ticket classification queue started");
 });
