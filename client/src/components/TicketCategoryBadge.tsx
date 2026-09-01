@@ -1,6 +1,6 @@
 import { TicketCategory } from 'core'
 
-const categoryBadgeColors: Record<TicketCategory, string> = {
+export const categoryBadgeColors: Record<TicketCategory, string> = {
   [TicketCategory.general_question]:
     'border-blue-500/25 bg-blue-500/10 text-blue-600 dark:text-blue-400',
   [TicketCategory.technical_question]:
@@ -8,6 +8,8 @@ const categoryBadgeColors: Record<TicketCategory, string> = {
   [TicketCategory.refund_request]:
     'border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-400',
 }
+
+export const uncategorizedBadgeColor = 'border-border bg-muted text-muted-foreground'
 
 type TicketCategoryBadgeProps = {
   category: TicketCategory | null

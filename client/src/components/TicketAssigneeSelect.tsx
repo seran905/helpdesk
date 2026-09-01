@@ -51,9 +51,8 @@ function TicketAssigneeSelect({ ticketId, assignedTo }: TicketAssigneeSelectProp
       onValueChange={(value) => mutate(value === UNASSIGNED ? null : value)}
     >
       <SelectTrigger
-        size="sm"
         aria-label="Assigned To"
-        className="inline-flex h-7 rounded-md border border-border bg-background text-sm shadow-none"
+        className="w-1/2 rounded-md border border-border bg-background shadow-none"
       >
         <SelectValue />
       </SelectTrigger>

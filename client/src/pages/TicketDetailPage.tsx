@@ -3,8 +3,8 @@ import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { TicketCategory, TicketStatus } from 'core'
-import TicketStatusBadge from '@/components/TicketStatusBadge'
-import TicketCategoryBadge from '@/components/TicketCategoryBadge'
+import TicketStatusSelect from '@/components/TicketStatusSelect'
+import TicketCategorySelect from '@/components/TicketCategorySelect'
 import TicketAssigneeSelect from '@/components/TicketAssigneeSelect'
 import { Skeleton } from '@/components/ui/skeleton'
 import { apiClient } from '@/lib/api-client'
@@ -34,6 +34,15 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
     <div className="text-sm">
       <span className="text-muted-foreground">{label}: </span>
       <span className="text-foreground">{value}</span>
+    </div>
+  )
+}
+
+function FieldRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1 text-sm">
+      <div className="text-muted-foreground">{label}</div>
+      {children}
     </div>
   )
 }
@@ -84,16 +93,12 @@ function TicketDetailPage() {
     <div className="px-8 py-10">
       <BackLink />
 
-      <div className="mb-6 flex items-center gap-3">
-        <h1 className="text-[32px] font-semibold tracking-tight text-foreground">
-          {ticket.subject}
-        </h1>
-        <TicketStatusBadge status={ticket.status} />
-        <TicketCategoryBadge category={ticket.category} />
-      </div>
+      <h1 className="mb-6 text-[32px] font-semibold tracking-tight text-foreground">
+        {ticket.subject}
+      </h1>
 
-      <div className="mb-8 grid grid-cols-1 gap-x-12 gap-y-3 sm:grid-cols-2">
-        <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-x-12 gap-y-3 sm:grid-cols-3">
+        <div className="space-y-3 sm:col-span-2">
           <DetailRow
             label="Requester"
             value={
@@ -103,35 +108,42 @@ function TicketDetailPage() {
               </>
             }
           />
-          <DetailRow
-            label="Assigned To"
-            value={<TicketAssigneeSelect ticketId={String(ticket.id)} assignedTo={ticket.assignedTo} />}
-          />
-        </div>
-        <div className="space-y-3">
           <DetailRow label="Created" value={new Date(ticket.createdAt).toLocaleString()} />
           <DetailRow label="Updated" value={new Date(ticket.updatedAt).toLocaleString()} />
+
+          <div className="pt-2">
+            <h2 className="mb-3 text-lg font-semibold text-foreground">Messages</h2>
+            {ticket.messages.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No messages yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {ticket.messages.map((message) => (
+                  <div key={message.id} className="rounded-md border border-border p-4">
+                    <div className="mb-2 flex items-baseline justify-between gap-4">
+                      <span className="font-medium text-foreground">{message.senderName}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {new Date(message.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm text-foreground">{message.body}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="space-y-3">
+          <FieldRow label="Status">
+            <TicketStatusSelect ticketId={String(ticket.id)} status={ticket.status} />
+          </FieldRow>
+          <FieldRow label="Category">
+            <TicketCategorySelect ticketId={String(ticket.id)} category={ticket.category} />
+          </FieldRow>
+          <FieldRow label="Assigned To">
+            <TicketAssigneeSelect ticketId={String(ticket.id)} assignedTo={ticket.assignedTo} />
+          </FieldRow>
         </div>
       </div>
-
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Messages</h2>
-      {ticket.messages.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No messages yet.</p>
-      ) : (
-        <div className="space-y-4">
-          {ticket.messages.map((message) => (
-            <div key={message.id} className="rounded-md border border-border p-4">
-              <div className="mb-2 flex items-baseline justify-between gap-4">
-                <span className="font-medium text-foreground">{message.senderName}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {new Date(message.createdAt).toLocaleString()}
-                </span>
-              </div>
-              <p className="whitespace-pre-wrap text-sm text-foreground">{message.body}</p>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

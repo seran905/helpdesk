@@ -104,7 +104,7 @@ describe('TicketDetailPage', () => {
     expect(screen.getAllByText(/jane@example\.com/)).toHaveLength(1)
   })
 
-  it('shows an unassigned fallback and no category badge when those fields are unset', async () => {
+  it('shows unassigned/uncategorized fallbacks when those fields are unset', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({
       data: { ticket: { ...mockTicket, category: null, assignedTo: null, messages: [] } },
     })
@@ -113,16 +113,23 @@ describe('TicketDetailPage', () => {
     await screen.findByRole('heading', { name: 'Cannot log in' })
     expect(screen.getByText('Unassigned')).toBeInTheDocument()
     expect(screen.queryByText('technical question')).not.toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Category' })).toHaveTextContent('uncategorized')
     expect(screen.getByText('No messages yet.')).toBeInTheDocument()
   })
 
-  it('shows the category as a badge next to the subject', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: { ticket: mockTicket } })
+  it('groups the status, category, and assignee dropdowns together', async () => {
+    mockGetResponses()
     renderTicketDetailPage()
 
-    const heading = await screen.findByRole('heading', { name: 'Cannot log in' })
-    const badge = screen.getByText('technical question')
-    expect(heading.parentElement).toContainElement(badge)
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+    const statusSelect = screen.getByRole('combobox', { name: 'Status' })
+    const categorySelect = screen.getByRole('combobox', { name: 'Category' })
+    const assigneeSelect = screen.getByRole('combobox', { name: 'Assigned To' })
+
+    // All three dropdowns live together in the same right-hand column.
+    const column = statusSelect.closest('.space-y-3')
+    expect(column).toContainElement(categorySelect)
+    expect(column).toContainElement(assigneeSelect)
   })
 
   it('navigates back to the tickets list via the back link', async () => {
@@ -187,6 +194,66 @@ describe('TicketDetailPage', () => {
     await waitFor(() =>
       expect(apiClient.patch).toHaveBeenCalledWith(`/api/tickets/${mockTicket.id}/assign`, {
         assignedToId: null,
+      }),
+    )
+  })
+
+  it('updates the status when a different option is selected', async () => {
+    mockGetResponses()
+    vi.mocked(apiClient.patch).mockResolvedValue({
+      data: { ticket: { id: mockTicket.id, status: TicketStatus.resolved } },
+    })
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    await user.click(screen.getByRole('combobox', { name: 'Status' }))
+    await user.click(await screen.findByRole('option', { name: TicketStatus.resolved }))
+
+    await waitFor(() =>
+      expect(apiClient.patch).toHaveBeenCalledWith(`/api/tickets/${mockTicket.id}/status`, {
+        status: TicketStatus.resolved,
+      }),
+    )
+  })
+
+  it('updates the category when a different option is selected', async () => {
+    mockGetResponses()
+    vi.mocked(apiClient.patch).mockResolvedValue({
+      data: { ticket: { id: mockTicket.id, category: TicketCategory.refund_request } },
+    })
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    await user.click(screen.getByRole('combobox', { name: 'Category' }))
+    await user.click(await screen.findByRole('option', { name: 'refund request' }))
+
+    await waitFor(() =>
+      expect(apiClient.patch).toHaveBeenCalledWith(`/api/tickets/${mockTicket.id}/category`, {
+        category: TicketCategory.refund_request,
+      }),
+    )
+  })
+
+  it('clears the category when "uncategorized" is selected', async () => {
+    mockGetResponses()
+    vi.mocked(apiClient.patch).mockResolvedValue({
+      data: { ticket: { id: mockTicket.id, category: null } },
+    })
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    await user.click(screen.getByRole('combobox', { name: 'Category' }))
+    await user.click(await screen.findByRole('option', { name: 'uncategorized' }))
+
+    await waitFor(() =>
+      expect(apiClient.patch).toHaveBeenCalledWith(`/api/tickets/${mockTicket.id}/category`, {
+        category: null,
       }),
     )
   })

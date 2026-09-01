@@ -2,6 +2,8 @@ export * from "./schemas/user.js";
 export * from "./schemas/ticket.js";
 export * from "./schemas/ticketListQuery.js";
 export * from "./schemas/assignTicket.js";
+export * from "./schemas/updateTicketStatus.js";
+export * from "./schemas/updateTicketCategory.js";
 export * from "./role.js";
 export * from "./ticketStatus.js";
 export * from "./ticketCategory.js";
