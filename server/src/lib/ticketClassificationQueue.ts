@@ -11,7 +11,11 @@ type ClassifyTicketJobData = {
 };
 
 export async function startTicketClassificationWorker() {
-  await boss.createQueue(CLASSIFY_TICKET_QUEUE);
+  await boss.createQueue(CLASSIFY_TICKET_QUEUE, {
+    retryLimit: 3,
+    retryDelay: 30,
+    retryBackoff: true,
+  });
 
   await boss.work<ClassifyTicketJobData>(CLASSIFY_TICKET_QUEUE, async ([job]) => {
     const { ticketId, subject, body } = job.data;
