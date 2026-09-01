@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { parseBody } from "../lib/validate.js";
 import { requireWebhookSecret } from "../middleware/requireWebhookSecret.js";
 import { SenderType } from "../generated/prisma/enums.js";
+import { classifyTicket } from "../lib/ticketClassifier.js";
 
 export const webhooksRouter = Router();
 
@@ -39,6 +40,8 @@ webhooksRouter.post("/inbound-email", requireWebhookSecret, async (req, res) => 
     orderBy: { createdAt: "desc" },
   });
 
+  const isNewTicket = !ticket;
+
   if (!ticket) {
     ticket = await prisma.ticket.create({
       data: {
@@ -65,4 +68,16 @@ webhooksRouter.post("/inbound-email", requireWebhookSecret, async (req, res) => 
   });
 
   res.status(201).json({ ticket, message });
+
+  if (isNewTicket) {
+    const ticketId = ticket.id;
+    classifyTicket({ subject, body })
+      .then((category) => {
+        if (!category) return;
+        return prisma.ticket.update({ where: { id: ticketId }, data: { category } });
+      })
+      .catch((err) => {
+        console.error("Failed to classify ticket:", err);
+      });
+  }
 });
