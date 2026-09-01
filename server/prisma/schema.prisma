@@ -56,17 +56,23 @@ model Ticket {
 }
 
 model TicketMessage {
-  id                Int      @id @default(autoincrement())
+  id                Int        @id @default(autoincrement())
   ticketId          Int
-  ticket            Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticket            Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   senderEmail       String
   senderName        String
+  senderType        SenderType @default(customer)
   body              String
-  providerMessageId String   @unique
-  createdAt         DateTime @default(now())
+  providerMessageId String     @unique
+  createdAt         DateTime   @default(now())
 
   @@index([ticketId])
   @@map("ticket_message")
+}
+
+enum SenderType {
+  customer
+  agent
 }
 
 enum TicketStatus {

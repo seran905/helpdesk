@@ -3,6 +3,7 @@ import { inboundEmailSchema, TicketStatus } from "core";
 import { prisma } from "../lib/prisma.js";
 import { parseBody } from "../lib/validate.js";
 import { requireWebhookSecret } from "../middleware/requireWebhookSecret.js";
+import { SenderType } from "../generated/prisma/enums.js";
 
 export const webhooksRouter = Router();
 
@@ -53,7 +54,14 @@ webhooksRouter.post("/inbound-email", requireWebhookSecret, async (req, res) => 
   }
 
   const message = await prisma.ticketMessage.create({
-    data: { ticketId: ticket.id, senderEmail, senderName, body, providerMessageId },
+    data: {
+      ticketId: ticket.id,
+      senderEmail,
+      senderName,
+      body,
+      providerMessageId,
+      senderType: SenderType.customer,
+    },
   });
 
   res.status(201).json({ ticket, message });

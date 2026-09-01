@@ -1,7 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import type { Request, Response } from "express";
 import {
   assignTicketSchema,
+  createReplySchema,
   ticketListQuerySchema,
   updateTicketCategorySchema,
   updateTicketStatusSchema,
@@ -13,7 +15,7 @@ import type { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import { parseBody } from "../lib/validate.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { Role } from "../generated/prisma/enums.js";
+import { Role, SenderType } from "../generated/prisma/enums.js";
 
 export const ticketsRouter = Router();
 
@@ -110,6 +112,7 @@ ticketsRouter.get("/:id", requireAuth, async (req, res) => {
           id: true,
           senderName: true,
           senderEmail: true,
+          senderType: true,
           body: true,
           createdAt: true,
         },
@@ -197,4 +200,42 @@ ticketsRouter.patch("/:id/category", requireAuth, async (req, res) => {
   });
 
   res.json({ ticket });
+});
+
+ticketsRouter.post("/:id/replies", requireAuth, async (req, res) => {
+  const id = parseTicketId(req, res);
+  if (id === undefined) return;
+
+  const data = parseBody(createReplySchema, req.body, res);
+  if (!data) return;
+
+  const existing = await prisma.ticket.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const [message] = await prisma.$transaction([
+    prisma.ticketMessage.create({
+      data: {
+        ticketId: id,
+        senderEmail: req.user!.email,
+        senderName: req.user!.name,
+        body: data.body,
+        providerMessageId: `agent-reply:${randomUUID()}`,
+        senderType: SenderType.agent,
+      },
+      select: {
+        id: true,
+        senderName: true,
+        senderEmail: true,
+        senderType: true,
+        body: true,
+        createdAt: true,
+      },
+    }),
+    prisma.ticket.update({ where: { id }, data: { updatedAt: new Date() } }),
+  ]);
+
+  res.status(201).json({ message });
 });

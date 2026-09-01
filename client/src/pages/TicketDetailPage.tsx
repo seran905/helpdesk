@@ -2,16 +2,18 @@ import type { ReactNode } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { TicketCategory, TicketStatus } from 'core'
+import { SenderType, TicketCategory, TicketStatus } from 'core'
 import TicketStatusSelect from '@/components/TicketStatusSelect'
 import TicketCategorySelect from '@/components/TicketCategorySelect'
 import TicketAssigneeSelect from '@/components/TicketAssigneeSelect'
+import ReplyForm from '@/components/ReplyForm'
 import { Skeleton } from '@/components/ui/skeleton'
 import { apiClient } from '@/lib/api-client'
 
 type TicketMessage = {
   id: number
   senderName: string
+  senderType: SenderType
   body: string
   createdAt: string
 }
@@ -120,7 +122,14 @@ function TicketDetailPage() {
                 {ticket.messages.map((message) => (
                   <div key={message.id} className="rounded-md border border-border p-4">
                     <div className="mb-2 flex items-baseline justify-between gap-4">
-                      <span className="font-medium text-foreground">{message.senderName}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">{message.senderName}</span>
+                        {message.senderType === SenderType.agent && (
+                          <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                            Agent
+                          </span>
+                        )}
+                      </span>
                       <span className="shrink-0 text-xs text-muted-foreground">
                         {new Date(message.createdAt).toLocaleString()}
                       </span>
@@ -130,6 +139,7 @@ function TicketDetailPage() {
                 ))}
               </div>
             )}
+            <ReplyForm ticketId={String(ticket.id)} />
           </div>
         </div>
         <div className="space-y-3">

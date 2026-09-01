@@ -1,4 +1,4 @@
-import { TicketCategory, TicketStatus } from 'core'
+import { SenderType, TicketCategory, TicketStatus } from 'core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -6,7 +6,7 @@ import { apiClient } from '@/lib/api-client'
 import { renderTicketDetailPage } from '@/test/renderTicketDetailPage'
 
 vi.mock('@/lib/api-client', () => ({
-  apiClient: { get: vi.fn(), patch: vi.fn() },
+  apiClient: { get: vi.fn(), patch: vi.fn(), post: vi.fn() },
 }))
 
 const mockTicket = {
@@ -23,12 +23,14 @@ const mockTicket = {
     {
       id: 1,
       senderName: 'Jane Doe',
+      senderType: SenderType.customer,
       body: "I can't log in to my account.",
       createdAt: '2026-08-29T00:00:00.000Z',
     },
     {
       id: 2,
       senderName: 'Agent Smith',
+      senderType: SenderType.agent,
       body: 'Can you try resetting your password?',
       createdAt: '2026-08-29T00:30:00.000Z',
     },
@@ -52,6 +54,7 @@ describe('TicketDetailPage', () => {
   beforeEach(() => {
     vi.mocked(apiClient.get).mockReset()
     vi.mocked(apiClient.patch).mockReset()
+    vi.mocked(apiClient.post).mockReset()
   })
 
   it('shows a skeleton while the request is pending', () => {
@@ -92,6 +95,19 @@ describe('TicketDetailPage', () => {
     expect(screen.getByText('Can you try resetting your password?')).toBeInTheDocument()
 
     expect(screen.getByText(new Date(mockTicket.updatedAt).toLocaleString())).toBeInTheDocument()
+  })
+
+  it('badges agent replies but not customer messages', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { ticket: mockTicket } })
+    renderTicketDetailPage()
+
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    const customerMessage = screen.getByText("I can't log in to my account.").closest('div')
+    const agentMessage = screen.getByText('Can you try resetting your password?').closest('div')
+
+    expect(customerMessage).not.toHaveTextContent('Agent')
+    expect(agentMessage).toHaveTextContent('Agent')
   })
 
   it('does not show message sender emails', async () => {
@@ -256,5 +272,52 @@ describe('TicketDetailPage', () => {
         category: null,
       }),
     )
+  })
+
+  it('submits a reply', async () => {
+    mockGetResponses()
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { message: {} } })
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    await user.type(screen.getByLabelText('Reply'), 'Thanks for reaching out.')
+    await user.click(screen.getByRole('button', { name: 'Send reply' }))
+
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith(`/api/tickets/${mockTicket.id}/replies`, {
+        body: 'Thanks for reaching out.',
+      }),
+    )
+  })
+
+  it('does not submit an empty reply', async () => {
+    mockGetResponses()
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    await user.click(screen.getByRole('button', { name: 'Send reply' }))
+
+    expect(await screen.findByText('Reply cannot be empty')).toBeInTheDocument()
+    expect(apiClient.post).not.toHaveBeenCalled()
+  })
+
+  it('shows an error and keeps the draft when the reply fails to send', async () => {
+    mockGetResponses()
+    vi.mocked(apiClient.post).mockRejectedValue(new Error('network error'))
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    const textarea = screen.getByLabelText('Reply')
+    await user.type(textarea, 'Thanks for reaching out.')
+    await user.click(screen.getByRole('button', { name: 'Send reply' }))
+
+    expect(await screen.findByText('Failed to send reply')).toBeInTheDocument()
+    expect(textarea).toHaveValue('Thanks for reaching out.')
   })
 })

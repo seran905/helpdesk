@@ -1,0 +1,75 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
+import { createReplySchema, type CreateReplyInput } from 'core'
+import { useForm } from 'react-hook-form'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { apiClient } from '@/lib/api-client'
+
+type ReplyFormProps = {
+  ticketId: string
+}
+
+function ReplyForm({ ticketId }: ReplyFormProps) {
+  const queryClient = useQueryClient()
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateReplyInput>({
+    resolver: zodResolver(createReplySchema),
+  })
+
+  const createReply = useMutation({
+    mutationFn: (values: CreateReplyInput) =>
+      apiClient.post(`/api/tickets/${ticketId}/replies`, values),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', ticketId] })
+      reset()
+    },
+  })
+
+  const onSubmit = async (values: CreateReplyInput) => {
+    try {
+      await createReply.mutateAsync(values)
+    } catch (err) {
+      const message = isAxiosError<{ error?: string }>(err)
+        ? (err.response?.data?.error ?? 'Failed to send reply')
+        : 'Failed to send reply'
+      setError('root', { message })
+    }
+  }
+
+  return (
+    <form className="mt-6 flex flex-col gap-2" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <Label htmlFor="reply-body">Reply</Label>
+      <Textarea
+        id="reply-body"
+        rows={4}
+        aria-invalid={errors.body ? 'true' : 'false'}
+        {...register('body')}
+      />
+      {errors.body && <p className="text-xs text-destructive">{errors.body.message}</p>}
+
+      {errors.root && (
+        <p className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-[13px] text-destructive">
+          <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-destructive text-[11px] font-bold text-white">
+            !
+          </span>
+          {errors.root.message}
+        </p>
+      )}
+
+      <Button type="submit" disabled={isSubmitting} className="self-start">
+        {isSubmitting ? 'Sending...' : 'Send reply'}
+      </Button>
+    </form>
+  )
+}
+
+export default ReplyForm
