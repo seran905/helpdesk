@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import TicketDetails from '@/components/TicketDetails'
+import TicketSummary from '@/components/TicketSummary'
 import UpdateTicket from '@/components/UpdateTicket'
 import ReplyThread from '@/components/ReplyThread'
 import ReplyForm from '@/components/ReplyForm'
@@ -44,6 +45,7 @@ function TicketDetailPage() {
       <div className="grid grid-cols-1 gap-x-12 gap-y-3 sm:grid-cols-3">
         <div className="space-y-3 sm:col-span-2">
           <TicketDetails ticket={ticket} />
+          <TicketSummary ticketId={String(ticket.id)} />
           <ReplyThread replies={replies} />
           <ReplyForm ticketId={String(ticket.id)} />
         </div>

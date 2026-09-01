@@ -14,6 +14,7 @@ import {
 } from "core";
 import type { Prisma } from "../generated/prisma/client.js";
 import { polishReply } from "../lib/replyPolisher.js";
+import { summarizeTicket } from "../lib/ticketSummarizer.js";
 import { prisma } from "../lib/prisma.js";
 import { parseBody } from "../lib/validate.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -128,6 +129,37 @@ ticketsRouter.get("/:id", requireAuth, async (req, res) => {
   }
 
   res.json({ ticket });
+});
+
+ticketsRouter.post("/:id/summary", requireAuth, async (req, res) => {
+  const id = parseTicketId(req, res);
+  if (id === undefined) return;
+
+  const existing = await prisma.ticket.findUnique({
+    where: { id },
+    select: {
+      subject: true,
+      messages: {
+        orderBy: { createdAt: "asc" },
+        select: { senderName: true, senderType: true, body: true },
+      },
+    },
+  });
+  if (!existing) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  try {
+    const summary = await summarizeTicket({
+      subject: existing.subject,
+      messages: existing.messages,
+    });
+    res.json({ summary });
+  } catch (err) {
+    console.error("Failed to summarize ticket:", err);
+    res.status(502).json({ error: "Failed to summarize ticket" });
+  }
 });
 
 ticketsRouter.patch("/:id/assign", requireAuth, async (req, res) => {
