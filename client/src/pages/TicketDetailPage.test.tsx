@@ -293,16 +293,13 @@ describe('TicketDetailPage', () => {
     )
   })
 
-  it('does not submit an empty reply', async () => {
+  it('disables the send reply button when the reply is empty', async () => {
     mockGetResponses()
     renderTicketDetailPage()
 
-    const user = userEvent.setup()
     await screen.findByRole('heading', { name: 'Cannot log in' })
 
-    await user.click(screen.getByRole('button', { name: 'Send reply' }))
-
-    expect(await screen.findByText('Reply cannot be empty')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Send reply' })).toBeDisabled()
     expect(apiClient.post).not.toHaveBeenCalled()
   })
 
@@ -320,5 +317,65 @@ describe('TicketDetailPage', () => {
 
     expect(await screen.findByText('Failed to send reply')).toBeInTheDocument()
     expect(textarea).toHaveValue('Thanks for reaching out.')
+  })
+
+  it('disables the polish button when the reply is empty', async () => {
+    mockGetResponses()
+    renderTicketDetailPage()
+
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+    expect(screen.getByRole('button', { name: 'Polish' })).toBeDisabled()
+  })
+
+  it('enables the polish button once a draft is typed', async () => {
+    mockGetResponses()
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    await user.type(screen.getByLabelText('Reply'), 'hey checking in')
+    expect(screen.getByRole('button', { name: 'Polish' })).toBeEnabled()
+  })
+
+  it('polishes the draft and replaces the textarea with the result', async () => {
+    mockGetResponses()
+    const polished = "Dear Jane,\n\nJust checking in on this.\n\nRegards,\nAgent Smith"
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { body: polished } })
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    const textarea = screen.getByLabelText('Reply')
+    await user.type(textarea, 'hey checking in')
+    await user.click(screen.getByRole('button', { name: 'Polish' }))
+
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith(`/api/tickets/${mockTicket.id}/replies/polish`, {
+        body: 'hey checking in',
+      }),
+    )
+    await waitFor(() => expect(textarea).toHaveValue(polished))
+  })
+
+  it('shows an error and keeps the draft when polishing fails', async () => {
+    mockGetResponses()
+    vi.mocked(apiClient.post).mockRejectedValue(new Error('network error'))
+    renderTicketDetailPage()
+
+    const user = userEvent.setup()
+    await screen.findByRole('heading', { name: 'Cannot log in' })
+
+    const textarea = screen.getByLabelText('Reply')
+    await user.type(textarea, 'hey checking in')
+    await user.click(screen.getByRole('button', { name: 'Polish' }))
+
+    expect(await screen.findByText('Failed to polish reply')).toBeInTheDocument()
+    expect(textarea).toHaveValue('hey checking in')
+    expect(apiClient.post).not.toHaveBeenCalledWith(
+      `/api/tickets/${mockTicket.id}/replies`,
+      expect.anything(),
+    )
   })
 })
