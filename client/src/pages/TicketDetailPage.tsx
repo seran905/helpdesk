@@ -1,12 +1,13 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import TicketDetails, { type TicketDetail } from '@/components/TicketDetails'
+import TicketDetails from '@/components/TicketDetails'
 import UpdateTicket from '@/components/UpdateTicket'
 import ReplyThread from '@/components/ReplyThread'
 import ReplyForm from '@/components/ReplyForm'
 import BackLink from '@/components/BackLink'
 import TicketDetailSkeleton from '@/components/TicketDetailSkeleton'
 import { apiClient } from '@/lib/api-client'
+import type { TicketDetail } from '@/types/ticket'
 
 function TicketDetailPage() {
   const { id } = useParams<{ id: string }>()

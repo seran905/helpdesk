@@ -8,7 +8,7 @@ import {
   type OnChangeFn,
   type SortingState,
 } from '@tanstack/react-table'
-import { TicketCategory, TicketSortField, TicketStatus } from 'core'
+import { TicketSortField } from 'core'
 import {
   Table,
   TableBody,
@@ -21,17 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import TicketStatusBadge from '@/components/TicketStatusBadge'
 import TicketCategoryBadge from '@/components/TicketCategoryBadge'
-
-export type Ticket = {
-  id: number
-  subject: string
-  status: TicketStatus
-  category: TicketCategory | null
-  requesterEmail: string
-  requesterName: string
-  createdAt: string
-  assignedTo: { id: string; name: string } | null
-}
+import type { Ticket } from '@/types/ticket'
 
 const features = tableFeatures({ rowSortingFeature })
 

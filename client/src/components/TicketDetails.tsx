@@ -1,26 +1,5 @@
 import type { ReactNode } from 'react'
-import type { SenderType, TicketCategory, TicketStatus } from 'core'
-
-export type TicketMessage = {
-  id: number
-  senderName: string
-  senderType: SenderType
-  body: string
-  createdAt: string
-}
-
-export type TicketDetail = {
-  id: number
-  subject: string
-  status: TicketStatus
-  category: TicketCategory | null
-  requesterEmail: string
-  requesterName: string
-  createdAt: string
-  updatedAt: string
-  assignedTo: { id: string; name: string } | null
-  messages: TicketMessage[]
-}
+import type { TicketDetail } from '@/types/ticket'
 
 export function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (

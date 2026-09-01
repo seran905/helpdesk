@@ -1,5 +1,5 @@
 import { SenderType } from 'core'
-import type { TicketMessage } from '@/components/TicketDetails'
+import type { TicketMessage } from '@/types/ticket'
 
 type ReplyThreadProps = {
   replies: TicketMessage[]

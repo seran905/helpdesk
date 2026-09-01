@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import TicketStatusSelect from '@/components/TicketStatusSelect'
 import TicketCategorySelect from '@/components/TicketCategorySelect'
 import TicketAssigneeSelect from '@/components/TicketAssigneeSelect'
-import type { TicketDetail } from '@/components/TicketDetails'
+import type { TicketDetail } from '@/types/ticket'
 
 function FieldRow({ label, children }: { label: string; children: ReactNode }) {
   return (

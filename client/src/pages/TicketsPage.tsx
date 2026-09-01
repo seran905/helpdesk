@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { SortingState } from '@tanstack/react-table'
 import { SortOrder, TicketSortField } from 'core'
-import TicketsTable, { type Ticket } from '@/components/TicketsTable'
+import TicketsTable from '@/components/TicketsTable'
 import TicketsToolbar from '@/components/TicketsToolbar'
 import TicketsPagination from '@/components/TicketsPagination'
 import { useTicketFilters } from '@/hooks/useTicketFilters'
 import { usePagination } from '@/hooks/usePagination'
 import { apiClient } from '@/lib/api-client'
+import type { Ticket } from '@/types/ticket'
 
 function TicketsPage() {
   const [sorting, setSorting] = useState<SortingState>([
