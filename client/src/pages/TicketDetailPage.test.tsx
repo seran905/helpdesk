@@ -130,7 +130,8 @@ describe('TicketDetailPage', () => {
     expect(screen.getByText('Unassigned')).toBeInTheDocument()
     expect(screen.queryByText('technical question')).not.toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Category' })).toHaveTextContent('uncategorized')
-    expect(screen.getByText('No messages yet.')).toBeInTheDocument()
+    expect(screen.getByText('No message yet.')).toBeInTheDocument()
+    expect(screen.getByText('No replies yet.')).toBeInTheDocument()
   })
 
   it('groups the status, category, and assignee dropdowns together', async () => {

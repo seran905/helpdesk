@@ -47,7 +47,7 @@ function ReplyForm({ ticketId }: ReplyFormProps) {
   }
 
   return (
-    <form className="mt-6 flex flex-col gap-2" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form className="flex flex-col gap-2" onSubmit={handleSubmit(onSubmit)} noValidate>
       <Label htmlFor="reply-body">Reply</Label>
       <Textarea
         id="reply-body"
