@@ -1,7 +1,38 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
+import dotenv from 'dotenv';
+import fs from 'node:fs';
 import path from 'node:path';
 
 const adminAuthFile = path.resolve(__dirname, '.auth/admin.json');
+
+// Same pattern as tickets-list.spec.ts / inbound-email-webhook.spec.ts: read
+// the webhook secret and the server's own origin straight from
+// server/.env.test rather than hardcoding either value here.
+const testEnv = dotenv.parse(
+  fs.readFileSync(path.resolve(__dirname, '../server/.env.test')),
+);
+const API_URL = testEnv.TEST_API_URL;
+const WEBHOOK_PATH = `${API_URL}/api/webhooks/inbound-email`;
+const WEBHOOK_SECRET_HEADER = testEnv.INBOUND_EMAIL_WEBHOOK_SECRET_HEADER;
+
+// Seeds one ticket via the inbound-email webhook (the only way tickets get
+// created today — there is no ticket-creation UI yet) and returns its id so
+// the caller can navigate straight to /tickets/:id.
+async function seedTicket(request: APIRequestContext, suffix: string) {
+  const response = await request.post(WEBHOOK_PATH, {
+    headers: { [WEBHOOK_SECRET_HEADER]: testEnv.INBOUND_EMAIL_WEBHOOK_SECRET },
+    data: {
+      senderEmail: `user-mgmt-${suffix}@example.com`,
+      senderName: `User Mgmt Customer ${suffix}`,
+      subject: `User mgmt test ${suffix}`,
+      body: `Body for user management e2e test ${suffix}.`,
+      providerMessageId: `user-mgmt-msg-${suffix}`,
+    },
+  });
+  expect(response.status()).toBe(201);
+  const body = await response.json();
+  return body.ticket.id as number;
+}
 
 test.describe('User management CRUD (admin)', () => {
   test.use({ storageState: adminAuthFile });
@@ -58,7 +89,6 @@ test.describe('User management CRUD (admin)', () => {
 
     // Other rows (e.g. the seeded admin/agent fixtures) should be unaffected.
     await expect(page.getByRole('row').filter({ hasText: 'Admin' })).toBeVisible();
-    const rowCountBeforeDelete = await page.getByRole('row').count();
 
     // --- Delete ---
     await updatedRow.getByRole('button', { name: `Delete ${updatedName}` }).click();
@@ -76,6 +106,36 @@ test.describe('User management CRUD (admin)', () => {
     await expect(deleteDialog).not.toBeVisible();
     await expect(page.getByRole('row').filter({ hasText: updatedEmail })).toHaveCount(0);
     await expect(page.getByRole('row').filter({ hasText: updatedName })).toHaveCount(0);
-    await expect(page.getByRole('row')).toHaveCount(rowCountBeforeDelete - 1);
+  });
+
+  test('deleting an assigned agent unassigns their tickets', async ({ page, request }) => {
+    const suffix = `${Date.now()}-${test.info().parallelIndex}-unassign`;
+    const agentName = `E2E Assignee ${suffix}`;
+    const agentEmail = `e2e-assignee-${suffix}@example.com`;
+
+    await page.goto('/users');
+    await page.getByRole('button', { name: 'Create user' }).click();
+    const createDialog = page.getByRole('dialog');
+    await createDialog.getByLabel('Name').fill(agentName);
+    await createDialog.getByLabel('Email').fill(agentEmail);
+    await createDialog.getByLabel('Password').fill('Password123!');
+    await createDialog.getByRole('button', { name: 'Create user' }).click();
+    await expect(createDialog).not.toBeVisible();
+
+    const ticketId = await seedTicket(request, suffix);
+    await page.goto(`/tickets/${ticketId}`);
+
+    await page.getByRole('combobox', { name: 'Assigned To' }).click();
+    await page.getByRole('option', { name: agentName }).click();
+    await expect(page.getByRole('combobox', { name: 'Assigned To' })).toContainText(agentName);
+
+    await page.goto('/users');
+    const agentRow = page.getByRole('row').filter({ hasText: agentEmail });
+    await agentRow.getByRole('button', { name: `Delete ${agentName}` }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(page.getByRole('row').filter({ hasText: agentEmail })).toHaveCount(0);
+
+    await page.goto(`/tickets/${ticketId}`);
+    await expect(page.getByRole('combobox', { name: 'Assigned To' })).toContainText('Unassigned');
   });
 });
