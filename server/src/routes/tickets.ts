@@ -7,14 +7,11 @@ import {
   ticketListQuerySchema,
   updateTicketCategorySchema,
   updateTicketStatusSchema,
-  AI_PROCESSING_STATUSES,
-  TicketStatus,
 } from "core";
-import type { Prisma } from "../generated/prisma/client.js";
 import { polishReply } from "../lib/replyPolisher.js";
 import { summarizeTicket } from "../lib/ticketSummarizer.js";
-import { DAILY_TICKET_COUNTS_DAYS, buildDailyTicketCounts } from "../lib/ticketStats.js";
 import { buildOrderBy, buildWhere } from "../lib/ticketQuery.js";
+import type { TicketStats } from "../lib/ticketStats.js";
 import { prisma } from "../lib/prisma.js";
 import { parseBody, parseTicketId } from "../lib/validate.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -51,47 +48,11 @@ ticketsRouter.get("/", requireAuth, async (req, res) => {
 });
 
 ticketsRouter.get("/stats", requireAuth, async (req, res) => {
-  const realTicketsWhere: Prisma.TicketWhereInput = {
-    status: { notIn: [...AI_PROCESSING_STATUSES] },
-  };
+  const [{ get_ticket_stats: stats }] = await prisma.$queryRaw<
+    { get_ticket_stats: TicketStats }[]
+  >`SELECT get_ticket_stats()`;
 
-  const dailyCountsStartDate = new Date();
-  dailyCountsStartDate.setUTCHours(0, 0, 0, 0);
-  dailyCountsStartDate.setUTCDate(dailyCountsStartDate.getUTCDate() - (DAILY_TICKET_COUNTS_DAYS - 1));
-
-  const [totalTickets, openTickets, aiResolvedTickets, resolvedTickets, recentTickets] =
-    await Promise.all([
-      prisma.ticket.count({ where: realTicketsWhere }),
-      prisma.ticket.count({ where: { status: TicketStatus.open } }),
-      prisma.ticket.count({
-        where: { ...realTicketsWhere, messages: { some: { senderType: SenderType.ai } } },
-      }),
-      prisma.ticket.findMany({
-        where: { status: { in: [TicketStatus.resolved, TicketStatus.closed] } },
-        select: { createdAt: true, updatedAt: true },
-      }),
-      prisma.ticket.findMany({
-        where: { createdAt: { gte: dailyCountsStartDate } },
-        select: { createdAt: true },
-      }),
-    ]);
-
-  const averageResolutionTimeMs =
-    resolvedTickets.length === 0
-      ? null
-      : resolvedTickets.reduce(
-          (sum, ticket) => sum + (ticket.updatedAt.getTime() - ticket.createdAt.getTime()),
-          0,
-        ) / resolvedTickets.length;
-
-  res.json({
-    totalTickets,
-    openTickets,
-    aiResolvedTickets,
-    aiResolvedPercentage: totalTickets === 0 ? 0 : (aiResolvedTickets / totalTickets) * 100,
-    averageResolutionTimeMs,
-    dailyTicketCounts: buildDailyTicketCounts(recentTickets.map((t) => t.createdAt)),
-  });
+  res.json(stats);
 });
 
 ticketsRouter.get("/:id", requireAuth, async (req, res) => {
