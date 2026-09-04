@@ -56,7 +56,7 @@ function TicketSummary({ ticketId }: TicketSummaryProps) {
 
       {summarize.data && (
         <div className="rounded-md border border-border bg-muted/30 p-4">
-          <p className="whitespace-pre-wrap text-sm text-foreground">{summarize.data}</p>
+          <p className="whitespace-pre-line text-sm text-foreground">{summarize.data}</p>
         </div>
       )}
     </div>

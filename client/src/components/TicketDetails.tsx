@@ -45,7 +45,7 @@ function TicketDetails({ ticket }: TicketDetailsProps) {
                 {new Date(originalMessage.createdAt).toLocaleString()}
               </span>
             </div>
-            <p className="whitespace-pre-wrap text-sm text-foreground">{originalMessage.body}</p>
+            <p className="whitespace-pre-line text-sm text-foreground">{originalMessage.body}</p>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">No message yet.</p>

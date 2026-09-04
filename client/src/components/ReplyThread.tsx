@@ -23,12 +23,17 @@ function ReplyThread({ replies }: ReplyThreadProps) {
                       Agent
                     </span>
                   )}
+                  {message.senderType === SenderType.ai && (
+                    <span className="inline-flex items-center rounded-full border border-fuchsia-500/25 bg-fuchsia-500/10 px-2 py-0.5 text-[11px] font-medium text-fuchsia-600 dark:text-fuchsia-400">
+                      AI
+                    </span>
+                  )}
                 </span>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {new Date(message.createdAt).toLocaleString()}
                 </span>
               </div>
-              <p className="whitespace-pre-wrap text-sm text-foreground">{message.body}</p>
+              <p className="whitespace-pre-line text-sm text-foreground">{message.body}</p>
             </div>
           ))}
         </div>

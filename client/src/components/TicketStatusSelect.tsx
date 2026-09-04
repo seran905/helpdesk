@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { TicketStatus } from 'core'
+import { AI_PROCESSING_STATUSES, TicketStatus } from 'core'
 import {
   Select,
   SelectContent,
@@ -9,10 +9,17 @@ import {
 } from '@/components/ui/select'
 import { apiClient } from '@/lib/api-client'
 
+// All statuses, used so the trigger can still show a label if a ticket is
+// ever viewed while AI-owned (new/processing) — see settableStatusItems below
+// for the options an agent can actually pick.
 const statusItems = Object.values(TicketStatus).map((status) => ({
   value: status,
   label: status,
 }))
+
+const settableStatusItems = statusItems.filter(
+  (item) => !(AI_PROCESSING_STATUSES as readonly string[]).includes(item.value),
+)
 
 type TicketStatusSelectProps = {
   ticketId: string
@@ -45,7 +52,7 @@ function TicketStatusSelect({ ticketId, status }: TicketStatusSelectProps) {
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {statusItems.map((item) => (
+        {settableStatusItems.map((item) => (
           <SelectItem key={item.value} value={item.value} className="capitalize">
             {item.label}
           </SelectItem>

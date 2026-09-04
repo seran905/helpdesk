@@ -8,6 +8,7 @@ import {
   ticketListQuerySchema,
   updateTicketCategorySchema,
   updateTicketStatusSchema,
+  AI_PROCESSING_STATUSES,
   TicketCategoryFilter,
   TicketSortField,
   type TicketListQuery,
@@ -46,6 +47,8 @@ function buildWhere(query: TicketListQuery): Prisma.TicketWhereInput {
 
   if (query.status) {
     where.status = query.status;
+  } else {
+    where.status = { notIn: [...AI_PROCESSING_STATUSES] };
   }
 
   if (query.category === TicketCategoryFilter.uncategorized) {

@@ -11,6 +11,7 @@ import { ticketsRouter } from "./routes/tickets.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 import { boss } from "./lib/queue.js";
 import { startTicketClassificationWorker } from "./lib/ticketClassificationQueue.js";
+import { startTicketAutoResolveWorker } from "./lib/ticketAutoResolveQueue.js";
 
 const app = express();
 const port = process.env.PORT ?? 3001;
@@ -52,4 +53,6 @@ app.listen(port, async () => {
   await boss.start();
   await startTicketClassificationWorker();
   console.log("Ticket classification queue started");
+  await startTicketAutoResolveWorker();
+  console.log("Ticket auto-resolve queue started");
 });

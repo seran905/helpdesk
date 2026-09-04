@@ -5,6 +5,7 @@ import { parseBody } from "../lib/validate.js";
 import { requireWebhookSecret } from "../middleware/requireWebhookSecret.js";
 import { SenderType } from "../generated/prisma/enums.js";
 import { enqueueTicketClassification } from "../lib/ticketClassificationQueue.js";
+import { enqueueTicketAutoResolve } from "../lib/ticketAutoResolveQueue.js";
 
 export const webhooksRouter = Router();
 
@@ -47,7 +48,7 @@ webhooksRouter.post("/inbound-email", requireWebhookSecret, async (req, res) => 
       data: {
         subject,
         normalizedSubject,
-        status: TicketStatus.open,
+        status: TicketStatus.new,
         requesterEmail: senderEmail,
         requesterName: senderName,
       },
@@ -72,6 +73,9 @@ webhooksRouter.post("/inbound-email", requireWebhookSecret, async (req, res) => 
   if (isNewTicket) {
     enqueueTicketClassification({ ticketId: ticket.id, subject, body }).catch((err) => {
       console.error("Failed to enqueue ticket classification:", err);
+    });
+    enqueueTicketAutoResolve({ ticketId: ticket.id, subject, body, requesterName: senderName }).catch((err) => {
+      console.error("Failed to enqueue ticket auto-resolve:", err);
     });
   }
 });
