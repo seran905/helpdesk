@@ -3,6 +3,7 @@ import "../src/lib/env.js";
 import { auth } from "../src/lib/auth.js";
 import { prisma } from "../src/lib/prisma.js";
 import { Role } from "../src/generated/prisma/enums.js";
+import { AI_AGENT_EMAIL, AI_AGENT_NAME } from "../src/lib/aiAgent.js";
 
 const email = process.env.ADMIN_EMAIL;
 const password = process.env.ADMIN_PASSWORD;
@@ -35,6 +36,21 @@ if (existing) {
   });
 
   console.log(`Created admin user: ${user.email}`);
+}
+
+const existingAiAgent = await ctx.internalAdapter.findUserByEmail(AI_AGENT_EMAIL);
+
+if (existingAiAgent) {
+  console.log(`AI agent already exists: ${AI_AGENT_EMAIL}`);
+} else {
+  const aiAgent = await ctx.internalAdapter.createUser({
+    email: AI_AGENT_EMAIL,
+    name: AI_AGENT_NAME,
+    emailVerified: true,
+    role: Role.agent,
+  });
+
+  console.log(`Created AI agent: ${aiAgent.email}`);
 }
 
 await prisma.$disconnect();

@@ -3,6 +3,7 @@ import { TicketStatus } from "core";
 import { boss } from "./queue.js";
 import { prisma } from "./prisma.js";
 import { AI_ASSISTANT_NAME, autoResolveTicket } from "./ticketAutoResolver.js";
+import { getAiAgentId } from "./aiAgent.js";
 import { SenderType } from "../generated/prisma/enums.js";
 
 export const AUTO_RESOLVE_TICKET_QUEUE = "auto-resolve-ticket";
@@ -27,9 +28,11 @@ export async function startTicketAutoResolveWorker() {
     const { ticketId, subject, body, requesterName } = job.data;
 
     try {
+      const aiAgentId = await getAiAgentId();
+
       await prisma.ticket.update({
         where: { id: ticketId },
-        data: { status: TicketStatus.processing },
+        data: { status: TicketStatus.processing, assignedToId: aiAgentId },
       });
 
       const result = await autoResolveTicket({ subject, body, requesterName });
@@ -54,13 +57,13 @@ export async function startTicketAutoResolveWorker() {
       } else {
         await prisma.ticket.update({
           where: { id: ticketId },
-          data: { status: TicketStatus.open },
+          data: { status: TicketStatus.open, assignedToId: null },
         });
       }
     } catch (err) {
       console.error("Failed to auto-resolve ticket:", err);
       await prisma.ticket
-        .update({ where: { id: ticketId }, data: { status: TicketStatus.open } })
+        .update({ where: { id: ticketId }, data: { status: TicketStatus.open, assignedToId: null } })
         .catch((updateErr) => {
           console.error("Failed to reset ticket status after auto-resolve failure:", updateErr);
         });
