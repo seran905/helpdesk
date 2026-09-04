@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { Router } from "express";
-import type { Request, Response } from "express";
 import {
   assignTicketSchema,
   createReplySchema,
@@ -9,64 +8,19 @@ import {
   updateTicketCategorySchema,
   updateTicketStatusSchema,
   AI_PROCESSING_STATUSES,
-  TicketCategoryFilter,
-  TicketSortField,
-  type TicketListQuery,
+  TicketStatus,
 } from "core";
 import type { Prisma } from "../generated/prisma/client.js";
 import { polishReply } from "../lib/replyPolisher.js";
 import { summarizeTicket } from "../lib/ticketSummarizer.js";
+import { DAILY_TICKET_COUNTS_DAYS, buildDailyTicketCounts } from "../lib/ticketStats.js";
+import { buildOrderBy, buildWhere } from "../lib/ticketQuery.js";
 import { prisma } from "../lib/prisma.js";
-import { parseBody } from "../lib/validate.js";
+import { parseBody, parseTicketId } from "../lib/validate.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { Role, SenderType } from "../generated/prisma/enums.js";
 
 export const ticketsRouter = Router();
-
-function parseTicketId(req: Request, res: Response): number | undefined {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id)) {
-    res.status(400).json({ error: "Invalid ticket id" });
-    return undefined;
-  }
-  return id;
-}
-
-function buildOrderBy(
-  sortBy: TicketSortField,
-  sortOrder: Prisma.SortOrder,
-): Prisma.TicketOrderByWithRelationInput {
-  if (sortBy === TicketSortField.assignedTo) {
-    return { assignedTo: { name: sortOrder } };
-  }
-  return { [sortBy]: sortOrder };
-}
-
-function buildWhere(query: TicketListQuery): Prisma.TicketWhereInput {
-  const where: Prisma.TicketWhereInput = {};
-
-  if (query.status) {
-    where.status = query.status;
-  } else {
-    where.status = { notIn: [...AI_PROCESSING_STATUSES] };
-  }
-
-  if (query.category === TicketCategoryFilter.uncategorized) {
-    where.category = null;
-  } else if (query.category) {
-    where.category = query.category;
-  }
-
-  if (query.search) {
-    where.OR = [
-      { subject: { contains: query.search, mode: "insensitive" } },
-      { requesterName: { contains: query.search, mode: "insensitive" } },
-      { requesterEmail: { contains: query.search, mode: "insensitive" } },
-    ];
-  }
-
-  return where;
-}
 
 ticketsRouter.get("/", requireAuth, async (req, res) => {
   const query = parseBody(ticketListQuerySchema, req.query, res);
@@ -94,6 +48,50 @@ ticketsRouter.get("/", requireAuth, async (req, res) => {
     prisma.ticket.count({ where }),
   ]);
   res.json({ tickets, total });
+});
+
+ticketsRouter.get("/stats", requireAuth, async (req, res) => {
+  const realTicketsWhere: Prisma.TicketWhereInput = {
+    status: { notIn: [...AI_PROCESSING_STATUSES] },
+  };
+
+  const dailyCountsStartDate = new Date();
+  dailyCountsStartDate.setUTCHours(0, 0, 0, 0);
+  dailyCountsStartDate.setUTCDate(dailyCountsStartDate.getUTCDate() - (DAILY_TICKET_COUNTS_DAYS - 1));
+
+  const [totalTickets, openTickets, aiResolvedTickets, resolvedTickets, recentTickets] =
+    await Promise.all([
+      prisma.ticket.count({ where: realTicketsWhere }),
+      prisma.ticket.count({ where: { status: TicketStatus.open } }),
+      prisma.ticket.count({
+        where: { ...realTicketsWhere, messages: { some: { senderType: SenderType.ai } } },
+      }),
+      prisma.ticket.findMany({
+        where: { status: { in: [TicketStatus.resolved, TicketStatus.closed] } },
+        select: { createdAt: true, updatedAt: true },
+      }),
+      prisma.ticket.findMany({
+        where: { createdAt: { gte: dailyCountsStartDate } },
+        select: { createdAt: true },
+      }),
+    ]);
+
+  const averageResolutionTimeMs =
+    resolvedTickets.length === 0
+      ? null
+      : resolvedTickets.reduce(
+          (sum, ticket) => sum + (ticket.updatedAt.getTime() - ticket.createdAt.getTime()),
+          0,
+        ) / resolvedTickets.length;
+
+  res.json({
+    totalTickets,
+    openTickets,
+    aiResolvedTickets,
+    aiResolvedPercentage: totalTickets === 0 ? 0 : (aiResolvedTickets / totalTickets) * 100,
+    averageResolutionTimeMs,
+    dailyTicketCounts: buildDailyTicketCounts(recentTickets.map((t) => t.createdAt)),
+  });
 });
 
 ticketsRouter.get("/:id", requireAuth, async (req, res) => {
