@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { createLocalAccountIssuer } from "better-auth";
 import { createUserSchema, updateUserSchema } from "core";
 import { auth } from "../lib/auth.js";
 import { prisma } from "../lib/prisma.js";
@@ -39,12 +40,15 @@ usersRouter.post("/", requireAuth, requireAdmin, async (req, res) => {
     return;
   }
 
-  const user = await ctx.internalAdapter.createUser({
-    email,
-    name,
-    emailVerified: true,
-    role: Role.agent,
-  });
+  const user = await ctx.internalAdapter.createUser(
+    {
+      email,
+      name,
+      emailVerified: true,
+      role: Role.agent,
+    },
+    { method: "admin" },
+  );
 
   const hashedPassword = await ctx.password.hash(password);
 
@@ -52,6 +56,7 @@ usersRouter.post("/", requireAuth, requireAdmin, async (req, res) => {
     userId: user.id,
     accountId: user.id,
     providerId: "credential",
+    issuer: createLocalAccountIssuer("credential"),
     password: hashedPassword,
   });
 

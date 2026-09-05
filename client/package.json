@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "start": "serve --single --listen $PORT dist",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:write": "vitest"
@@ -30,6 +31,7 @@
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.85.0",
     "react-router-dom": "^7.18.2",
+    "serve": "^14.2.6",
     "shadcn": "^4.16.2",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
