@@ -1,7 +1,8 @@
-import "dotenv/config";
+import "./instrument.js";
 import "./lib/env.js";
 import express from "express";
 import cors from "cors";
+import * as Sentry from "@sentry/node";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import { prisma } from "./lib/prisma.js";
@@ -44,6 +45,8 @@ app.get("/api/me", requireAuth, (req, res) => {
 app.use("/api/users", usersRouter);
 app.use("/api/tickets", ticketsRouter);
 app.use("/api/webhooks", webhooksRouter);
+
+Sentry.setupExpressErrorHandler(app);
 
 app.listen(port, async () => {
   await prisma.$connect();
