@@ -1,7 +1,8 @@
 import { Role } from 'core'
-import { LayoutDashboard, Ticket, Users } from 'lucide-react'
+import { LayoutDashboard, Moon, Sun, Ticket, Users } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { signOut, useSession } from '../lib/auth-client'
+import { useTheme } from '@/hooks/useTheme'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 
@@ -15,6 +16,7 @@ const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
 function NavBar() {
   const navigate = useNavigate()
   const { data: session } = useSession()
+  const { theme, toggleTheme } = useTheme()
 
   const handleSignOut = async () => {
     await signOut({
@@ -54,6 +56,15 @@ function NavBar() {
         </div>
       </div>
       <div className="flex items-center gap-3.5">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          onClick={toggleTheme}
+        >
+          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </Button>
         <Avatar>
           <AvatarFallback className="bg-primary/10 text-[13px] font-bold text-primary">
             {initial}
