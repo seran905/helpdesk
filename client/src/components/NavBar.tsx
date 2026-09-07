@@ -1,12 +1,15 @@
 import { Role } from 'core'
+import { LayoutDashboard, Ticket, Users } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { signOut, useSession } from '../lib/auth-client'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 
 const navLinkClassName = ({ isActive }: { isActive: boolean }) =>
-  `text-sm font-medium transition-colors ${
-    isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+  `flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+    isActive
+      ? 'bg-primary text-primary-foreground'
+      : 'text-muted-foreground hover:text-foreground'
   }`
 
 function NavBar() {
@@ -33,15 +36,18 @@ function NavBar() {
           </span>
           Helpdesk
         </span>
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-1.5">
           <NavLink to="/" end className={navLinkClassName}>
-            Home
+            <LayoutDashboard className="h-4 w-4" />
+            Dashboard
           </NavLink>
           <NavLink to="/tickets" className={navLinkClassName}>
+            <Ticket className="h-4 w-4" />
             Tickets
           </NavLink>
           {session?.user.role === Role.admin && (
             <NavLink to="/users" className={navLinkClassName}>
+              <Users className="h-4 w-4" />
               Users
             </NavLink>
           )}

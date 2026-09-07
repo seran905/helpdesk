@@ -59,19 +59,19 @@ describe('HomePage', () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: mockStats })
     renderHomePage()
 
-    expect(screen.getByText('Total tickets')).toBeInTheDocument()
+    expect(screen.getByText('Total Tickets')).toBeInTheDocument()
     expect(await screen.findByText('42')).toBeInTheDocument()
 
-    expect(screen.getByText('Open tickets')).toBeInTheDocument()
+    expect(screen.getByText('Open Tickets')).toBeInTheDocument()
     expect(screen.getByText('7')).toBeInTheDocument()
 
-    expect(screen.getByText('Resolved by AI')).toBeInTheDocument()
+    expect(screen.getByText('AI-Resolved Tickets')).toBeInTheDocument()
     expect(screen.getByText('15')).toBeInTheDocument()
 
-    expect(screen.getByText('% resolved by AI')).toBeInTheDocument()
+    expect(screen.getByText('AI Resolution Rate')).toBeInTheDocument()
     expect(screen.getByText('36%')).toBeInTheDocument()
 
-    expect(screen.getByText('Avg. resolution time')).toBeInTheDocument()
+    expect(screen.getByText('Average Resolution Time')).toBeInTheDocument()
     expect(screen.getByText('2h 15m')).toBeInTheDocument()
   })
 
