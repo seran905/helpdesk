@@ -1,0 +1,18 @@
+{
+  "name": "helpdesk-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["client", "server", "core"],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "playwright:install": "playwright install --with-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "dotenv": "^17.4.2"
+  }
+}

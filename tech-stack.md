@@ -22,6 +22,7 @@
 ## AI
 
 - Claude API (Anthropic) for ticket classification, summaries, and suggested replies
+- Vercel AI SDK (`ai` + `@ai-sdk/openai`) with OpenAI's gpt-5-nano for polishing agent reply drafts
 
 ## Email
 

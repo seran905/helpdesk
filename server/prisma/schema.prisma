@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String    @id
+  name            String
+  email           String
+  emailVerified   Boolean   @default(false)
+  image           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  sessions        Session[]
+  accounts        Account[]
+  assignedTickets Ticket[]
+
+  role Role
+
+  @@unique([email])
+  @@map("user")
+}
+
+enum Role {
+  admin
+  agent
+}
+
+model Ticket {
+  id                Int             @id @default(autoincrement())
+  subject           String
+  normalizedSubject String
+  status            TicketStatus    @default(new)
+  category          TicketCategory?
+  requesterEmail    String
+  requesterName     String
+  assignedToId      String?
+  assignedTo        User?           @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  messages          TicketMessage[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([requesterEmail, normalizedSubject])
+  @@index([assignedToId])
+  @@map("ticket")
+}
+
+model TicketMessage {
+  id                Int        @id @default(autoincrement())
+  ticketId          Int
+  ticket            Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderEmail       String
+  senderName        String
+  senderType        SenderType @default(customer)
+  body              String
+  providerMessageId String     @unique
+  createdAt         DateTime   @default(now())
+
+  @@index([ticketId])
+  @@map("ticket_message")
+}
+
+enum SenderType {
+  customer
+  agent
+  ai
+}
+
+enum TicketStatus {
+  new
+  processing
+  open
+  resolved
+  closed
+}
+
+enum TicketCategory {
+  general_question
+  technical_question
+  refund_request
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  issuer                String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
