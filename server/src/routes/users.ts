@@ -7,12 +7,13 @@ import { parseBody } from "../lib/validate.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { Role } from "../generated/prisma/enums.js";
+import { AI_AGENT_EMAIL } from "../lib/aiAgent.js";
 
 export const usersRouter = Router();
 
 usersRouter.get("/", requireAuth, requireAdmin, async (_req, res) => {
   const users = await prisma.user.findMany({
-    where: { deletedAt: null },
+    where: { deletedAt: null, email: { not: AI_AGENT_EMAIL } },
     select: { id: true, name: true, email: true, role: true, createdAt: true },
   });
   res.json({ users });
@@ -116,6 +117,11 @@ usersRouter.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
 
   if (user.role === Role.admin) {
     res.status(403).json({ error: "Admin accounts cannot be deleted" });
+    return;
+  }
+
+  if (user.email === AI_AGENT_EMAIL) {
+    res.status(403).json({ error: "The AI agent account cannot be deleted" });
     return;
   }
 
