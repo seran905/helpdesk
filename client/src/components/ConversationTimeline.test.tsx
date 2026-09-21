@@ -21,7 +21,7 @@ const messages: TicketMessage[] = [
   },
   {
     id: 3,
-    senderName: 'Helpdesk AI',
+    senderName: 'Suzhi.ai',
     senderType: SenderType.ai,
     body: 'Suggested next step: ask for a screenshot of the error.',
     createdAt: '2026-08-29T00:45:00.000Z',

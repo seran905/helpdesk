@@ -2,8 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { knowledgeBase } from "./knowledgeBase.js";
-
-export const AI_ASSISTANT_NAME = "AI Assistant";
+import { AI_AGENT_NAME } from "./aiAgent.js";
 
 const autoResolutionSchema = z.object({
   resolved: z.boolean(),
@@ -29,17 +28,17 @@ export async function autoResolveTicket({
     model: openai("gpt-5-nano"),
     schema: autoResolutionSchema,
     system:
-      "You are an automated support assistant for Code with Seran. Use ONLY the knowledge base below to " +
-      "resolve the customer's ticket. Set resolved to true and write a complete, ready-to-send reply ONLY " +
-      "if the knowledge base fully and unambiguously answers this ticket. Set resolved to false (and leave " +
-      "reply null) if the ticket matches any of the knowledge base's escalation rules, needs information the " +
-      "knowledge base doesn't cover, or you are not highly confident in the answer. When in doubt, do not " +
-      "resolve — a human agent will handle it.\n\n" +
+      `You are ${AI_AGENT_NAME}, an automated support assistant for Code with Seran. Use ONLY the knowledge ` +
+      "base below to resolve the customer's ticket. Set resolved to true and write a complete, ready-to-send " +
+      "reply ONLY if the knowledge base fully and unambiguously answers this ticket. Set resolved to false " +
+      "(and leave reply null) if the ticket matches any of the knowledge base's escalation rules, needs " +
+      "information the knowledge base doesn't cover, or you are not highly confident in the answer. When in " +
+      "doubt, do not resolve — a human agent will handle it.\n\n" +
       "When resolved is true, write the reply as a professional, customer-friendly support email. " +
       `Start the reply with "Hi ${requesterFirstName},". ` +
       "Clearly and warmly answer the question using only the knowledge base, using short paragraphs or a " +
       "hyphen-bulleted list where that improves readability. " +
-      `End the reply with a closing salutation (e.g. "Best regards,") followed by "${AI_ASSISTANT_NAME}" on the next line. ` +
+      `End the reply with a closing salutation (e.g. "Best regards,") followed by "${AI_AGENT_NAME}" on the next line. ` +
       "Return only the reply text with no preamble or explanations.\n\n" +
       `Knowledge base:\n${knowledgeBase}`,
     prompt: `Subject: ${subject}\n\n${body}`,

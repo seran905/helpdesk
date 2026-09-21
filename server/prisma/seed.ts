@@ -46,7 +46,12 @@ if (existing) {
 const existingAiAgent = await ctx.internalAdapter.findUserByEmail(AI_AGENT_EMAIL);
 
 if (existingAiAgent) {
-  console.log(`AI agent already exists: ${AI_AGENT_EMAIL}`);
+  if (existingAiAgent.user.name !== AI_AGENT_NAME) {
+    await ctx.internalAdapter.updateUser(existingAiAgent.user.id, { name: AI_AGENT_NAME });
+    console.log(`Updated AI agent name to: ${AI_AGENT_NAME}`);
+  } else {
+    console.log(`AI agent already exists: ${AI_AGENT_EMAIL}`);
+  }
 } else {
   const aiAgent = await ctx.internalAdapter.createUser(
     {

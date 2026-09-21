@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { TicketStatus } from "core";
 import { boss } from "./queue.js";
 import { prisma } from "./prisma.js";
-import { AI_ASSISTANT_NAME, autoResolveTicket } from "./ticketAutoResolver.js";
-import { getAiAgentId } from "./aiAgent.js";
+import { autoResolveTicket } from "./ticketAutoResolver.js";
+import { AI_AGENT_NAME, getAiAgentId } from "./aiAgent.js";
 import { SenderType } from "../generated/prisma/enums.js";
 
 export const AUTO_RESOLVE_TICKET_QUEUE = "auto-resolve-ticket";
@@ -43,7 +43,7 @@ export async function startTicketAutoResolveWorker() {
             data: {
               ticketId,
               senderEmail: AI_ASSISTANT_EMAIL,
-              senderName: AI_ASSISTANT_NAME,
+              senderName: AI_AGENT_NAME,
               senderType: SenderType.ai,
               body: result.reply,
               providerMessageId: `ai-reply:${randomUUID()}`,
