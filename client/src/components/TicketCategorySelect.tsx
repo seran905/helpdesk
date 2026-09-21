@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { apiClient } from '@/lib/api-client'
+import { categoryBadgeColors, uncategorizedBadgeColor } from '@/components/TicketCategoryBadge'
 
 const categoryItems = Object.values(TicketCategoryFilter).map((value) => ({
   value,
@@ -22,6 +23,7 @@ type TicketCategorySelectProps = {
 function TicketCategorySelect({ ticketId, category }: TicketCategorySelectProps) {
   const queryClient = useQueryClient()
   const value = category ?? TicketCategoryFilter.uncategorized
+  const chipColor = category ? categoryBadgeColors[category] : uncategorizedBadgeColor
 
   const { mutate, isPending } = useMutation({
     mutationFn: (nextValue: TicketCategoryFilter) =>
@@ -43,9 +45,9 @@ function TicketCategorySelect({ ticketId, category }: TicketCategorySelectProps)
     >
       <SelectTrigger
         aria-label="Category"
-        className="w-1/2 rounded-md border border-border bg-background capitalize shadow-none"
+        className={`w-44 rounded-md border px-3 py-2 text-sm capitalize shadow-none ${chipColor}`}
       >
-        <SelectValue />
+        <SelectValue className="min-w-0 truncate" />
       </SelectTrigger>
       <SelectContent>
         {categoryItems.map((item) => (

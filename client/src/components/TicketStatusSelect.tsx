@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { apiClient } from '@/lib/api-client'
+import { statusBadgeColors } from '@/components/TicketStatusBadge'
 
 // All statuses, used so the trigger can still show a label if a ticket is
 // ever viewed while AI-owned (new/processing) — see settableStatusItems below
@@ -47,9 +48,11 @@ function TicketStatusSelect({ ticketId, status }: TicketStatusSelectProps) {
     >
       <SelectTrigger
         aria-label="Status"
-        className="w-1/2 rounded-md border border-border bg-background capitalize shadow-none"
+        className={`w-44 rounded-md border px-3 py-2 text-sm font-semibold capitalize shadow-none ${
+          statusBadgeColors[status] ?? statusBadgeColors[TicketStatus.open]
+        }`}
       >
-        <SelectValue />
+        <SelectValue className="min-w-0 truncate" />
       </SelectTrigger>
       <SelectContent>
         {settableStatusItems.map((item) => (

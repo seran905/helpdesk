@@ -1,9 +1,9 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import TicketDetails from '@/components/TicketDetails'
+import TicketHeader from '@/components/TicketHeader'
 import TicketSummary from '@/components/TicketSummary'
-import UpdateTicket from '@/components/UpdateTicket'
-import ReplyThread from '@/components/ReplyThread'
+import ConversationTimeline from '@/components/ConversationTimeline'
+import CasePanel from '@/components/CasePanel'
 import ReplyForm from '@/components/ReplyForm'
 import BackLink from '@/components/BackLink'
 import TicketDetailSkeleton from '@/components/TicketDetailSkeleton'
@@ -36,20 +36,26 @@ function TicketDetailPage() {
     )
   }
 
-  const replies = ticket.messages.slice(1)
-
   return (
     <div className="px-8 py-10">
       <BackLink />
 
-      <div className="grid grid-cols-1 gap-x-12 gap-y-3 sm:grid-cols-3">
-        <div className="space-y-3 sm:col-span-2">
-          <TicketDetails ticket={ticket} />
-          <TicketSummary ticketId={String(ticket.id)} />
-          <ReplyThread replies={replies} />
+      <div className="grid grid-cols-1 gap-x-12 gap-y-8 sm:grid-cols-3">
+        <div className="space-y-8 sm:col-span-2">
+          <TicketHeader ticket={ticket} />
+
+          <div>
+            <h2 className="mb-4 text-[15px] font-semibold text-foreground">Conversation</h2>
+            <div className="mb-6">
+              <TicketSummary ticketId={String(ticket.id)} />
+            </div>
+            <ConversationTimeline messages={ticket.messages} />
+          </div>
+
           <ReplyForm ticketId={String(ticket.id)} />
         </div>
-        <UpdateTicket ticket={ticket} />
+
+        <CasePanel ticket={ticket} />
       </div>
     </div>
   )

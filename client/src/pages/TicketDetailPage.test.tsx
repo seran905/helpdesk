@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { apiClient } from '@/lib/api-client'
+import { formatDateTime } from '@/lib/formatDate'
 import { renderTicketDetailPage } from '@/test/renderTicketDetailPage'
 
 vi.mock('@/lib/api-client', () => ({
@@ -94,7 +95,7 @@ describe('TicketDetailPage', () => {
     expect(screen.getByText("I can't log in to my account.")).toBeInTheDocument()
     expect(screen.getByText('Can you try resetting your password?')).toBeInTheDocument()
 
-    expect(screen.getByText(new Date(mockTicket.updatedAt).toLocaleString())).toBeInTheDocument()
+    expect(screen.getByText(`Updated ${formatDateTime(mockTicket.updatedAt)}`)).toBeInTheDocument()
   })
 
   it('badges agent replies but not customer messages', async () => {
@@ -130,8 +131,7 @@ describe('TicketDetailPage', () => {
     expect(screen.getByText('Unassigned')).toBeInTheDocument()
     expect(screen.queryByText('technical question')).not.toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Category' })).toHaveTextContent('uncategorized')
-    expect(screen.getByText('No message yet.')).toBeInTheDocument()
-    expect(screen.getByText('No replies yet.')).toBeInTheDocument()
+    expect(screen.getByText('No messages yet.')).toBeInTheDocument()
   })
 
   it('groups the status, category, and assignee dropdowns together', async () => {
@@ -143,8 +143,8 @@ describe('TicketDetailPage', () => {
     const categorySelect = screen.getByRole('combobox', { name: 'Category' })
     const assigneeSelect = screen.getByRole('combobox', { name: 'Assigned To' })
 
-    // All three dropdowns live together in the same right-hand column.
-    const column = statusSelect.closest('.space-y-3')
+    // All three dropdowns live together in the same case panel.
+    const column = statusSelect.closest('[data-slot="case-panel"]')
     expect(column).toContainElement(categorySelect)
     expect(column).toContainElement(assigneeSelect)
   })

@@ -12,6 +12,32 @@ const UNASSIGNED = 'unassigned'
 
 type Agent = { id: string; name: string }
 
+function initials(name: string) {
+  const [first, second] = name.trim().split(/\s+/)
+  return ((first?.[0] ?? '') + (second?.[0] ?? '')).toUpperCase()
+}
+
+// Decorative — the agent's name is always rendered alongside it, so it's
+// hidden from the accessible name to avoid announcing/matching "AS Agent Smith".
+function AssigneeAvatar({ name }: { name: string | null }) {
+  if (!name) {
+    return (
+      <span
+        aria-hidden="true"
+        className="size-5 shrink-0 rounded-full border border-dashed border-muted-foreground/40"
+      />
+    )
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary"
+    >
+      {initials(name)}
+    </span>
+  )
+}
+
 type TicketAssigneeSelectProps = {
   ticketId: string
   assignedTo: { id: string; name: string } | null
@@ -52,14 +78,22 @@ function TicketAssigneeSelect({ ticketId, assignedTo }: TicketAssigneeSelectProp
     >
       <SelectTrigger
         aria-label="Assigned To"
-        className="w-1/2 rounded-md border border-border bg-background shadow-none"
+        className="w-44 rounded-md border border-border bg-background shadow-none"
       >
-        <SelectValue />
+        <SelectValue className="min-w-0">
+          {() => (
+            <>
+              <AssigneeAvatar name={assignedTo?.name ?? null} />
+              <span className="min-w-0 truncate">{assignedTo?.name ?? 'Unassigned'}</span>
+            </>
+          )}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {items.map((item) => (
           <SelectItem key={item.value} value={item.value}>
-            {item.label}
+            <AssigneeAvatar name={item.value === UNASSIGNED ? null : item.label} />
+            <span className="min-w-0 truncate">{item.label}</span>
           </SelectItem>
         ))}
       </SelectContent>

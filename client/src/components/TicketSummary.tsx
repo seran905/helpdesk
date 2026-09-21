@@ -33,13 +33,14 @@ function TicketSummary({ ticketId }: TicketSummaryProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
+        size="sm"
         onClick={onSummarize}
         disabled={summarize.isPending}
-        className="self-start"
+        className="self-start text-fuchsia-600 hover:bg-fuchsia-500/10 hover:text-fuchsia-600 dark:text-fuchsia-400"
       >
         <SparklesIcon />
         {summarize.isPending ? 'Summarizing...' : 'Summarize'}
@@ -55,7 +56,8 @@ function TicketSummary({ ticketId }: TicketSummaryProps) {
       )}
 
       {summarize.data && (
-        <div className="rounded-md border border-border bg-muted/30 p-4">
+        <div className="flex gap-2.5 rounded-md border border-fuchsia-500/25 bg-fuchsia-500/[0.06] p-4">
+          <SparklesIcon className="mt-0.5 size-4 shrink-0 text-fuchsia-500" />
           <p className="whitespace-pre-line text-sm text-foreground">{summarize.data}</p>
         </div>
       )}
