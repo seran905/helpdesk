@@ -32,7 +32,11 @@ const columns = columnHelper.columns([
     id: TicketSortField.subject,
     header: 'Subject',
     cell: (info) => (
-      <Link to={`/tickets/${info.row.original.id}`} className="link font-medium">
+      <Link
+        to={`/tickets/${info.row.original.id}`}
+        state={{ from: `${window.location.pathname}${window.location.search}` }}
+        className="link font-medium"
+      >
         {info.getValue()}
       </Link>
     ),

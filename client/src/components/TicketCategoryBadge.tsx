@@ -11,6 +11,12 @@ export const categoryBadgeColors: Record<TicketCategory, string> = {
 
 export const uncategorizedBadgeColor = 'border-border bg-muted text-muted-foreground'
 
+const categoryLabels: Record<TicketCategory, string> = {
+  [TicketCategory.general_question]: 'General',
+  [TicketCategory.technical_question]: 'Technical',
+  [TicketCategory.refund_request]: 'Refund',
+}
+
 type TicketCategoryBadgeProps = {
   category: TicketCategory | null
 }
@@ -20,9 +26,9 @@ function TicketCategoryBadge({ category }: TicketCategoryBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${categoryBadgeColors[category]}`}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${categoryBadgeColors[category]}`}
     >
-      {category.replace(/_/g, ' ')}
+      {categoryLabels[category]}
     </span>
   )
 }

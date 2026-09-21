@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { PAGE_SIZE_OPTIONS } from '@/hooks/usePagination'
 import { Button } from '@/components/ui/button'
 import {
@@ -55,22 +56,24 @@ function TicketsPagination({
       <div className="flex items-center gap-3">
         <Button
           variant="outline"
-          size="sm"
+          size="icon"
+          aria-label="Previous page"
           disabled={pageIndex === 0}
           onClick={() => onPageIndexChange(pageIndex - 1)}
         >
-          Previous
+          <ChevronLeft />
         </Button>
         <span className="text-sm text-muted-foreground">
           Page {currentPage} of {pageCount}
         </span>
         <Button
           variant="outline"
-          size="sm"
+          size="icon"
+          aria-label="Next page"
           disabled={currentPage >= pageCount}
           onClick={() => onPageIndexChange(pageIndex + 1)}
         >
-          Next
+          <ChevronRight />
         </Button>
       </div>
     </div>

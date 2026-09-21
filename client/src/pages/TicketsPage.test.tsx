@@ -72,7 +72,7 @@ describe('TicketsPage', () => {
     expect(screen.getByText('Jane Doe')).toBeInTheDocument()
     expect(screen.getByText('jane@example.com')).toBeInTheDocument()
     expect(screen.getByText(TicketStatus.open)).toBeInTheDocument()
-    expect(screen.getByText('technical question')).toBeInTheDocument()
+    expect(screen.getByText('Technical')).toBeInTheDocument()
     expect(screen.getByText('Agent Smith')).toBeInTheDocument()
     expect(
       screen.getByText(new Date(mockTickets[0].createdAt).toLocaleDateString()),
@@ -185,8 +185,8 @@ describe('TicketsPage', () => {
     renderTicketsPage()
 
     expect(await screen.findByText('Page 1 of 3')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeEnabled()
   })
 
   it('refetches with the next pageIndex when Next is clicked, and disables Next on the last page', async () => {
@@ -196,7 +196,7 @@ describe('TicketsPage', () => {
     const user = userEvent.setup()
     await screen.findByText('Page 1 of 3')
 
-    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next page' }))
 
     await waitFor(() =>
       expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
@@ -205,9 +205,9 @@ describe('TicketsPage', () => {
     )
     await screen.findByText('Page 2 of 3')
 
-    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next page' }))
     await screen.findByText('Page 3 of 3')
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled()
   })
 
   it('resets to the first page when a filter changes', async () => {
@@ -217,7 +217,7 @@ describe('TicketsPage', () => {
     const user = userEvent.setup()
     await screen.findByText('Page 1 of 3')
 
-    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next page' }))
     await screen.findByText('Page 2 of 3')
 
     await user.click(screen.getByRole('combobox', { name: 'Filter by status' }))
@@ -254,7 +254,7 @@ describe('TicketsPage', () => {
     const user = userEvent.setup()
     await screen.findByText('Page 1 of 3')
 
-    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next page' }))
     await screen.findByText('Page 2 of 3')
 
     await user.click(screen.getByRole('combobox', { name: 'Rows per page' }))
