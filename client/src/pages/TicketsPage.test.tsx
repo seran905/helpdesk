@@ -184,9 +184,10 @@ describe('TicketsPage', () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets, total: 25 } })
     renderTicketsPage()
 
-    expect(await screen.findByText('Page 1 of 3')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Next page' })).toBeEnabled()
+    expect(await screen.findByText('of 3')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Jump to position' })).toHaveValue('1')
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
   })
 
   it('refetches with the next pageIndex when Next is clicked, and disables Next on the last page', async () => {
@@ -194,20 +195,56 @@ describe('TicketsPage', () => {
     renderTicketsPage()
 
     const user = userEvent.setup()
-    await screen.findByText('Page 1 of 3')
+    await screen.findByText('of 3')
 
-    await user.click(screen.getByRole('button', { name: 'Next page' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
 
     await waitFor(() =>
       expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
         params: { ...defaultParams, pageIndex: 1 },
       }),
     )
-    await screen.findByText('Page 2 of 3')
+    expect(await screen.findByRole('textbox', { name: 'Jump to position' })).toHaveValue('2')
 
-    await user.click(screen.getByRole('button', { name: 'Next page' }))
-    await screen.findByText('Page 3 of 3')
-    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    expect(await screen.findByRole('textbox', { name: 'Jump to position' })).toHaveValue('3')
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+  })
+
+  it('jumps to the typed page number when the page input is submitted', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets, total: 25 } })
+    renderTicketsPage()
+
+    const user = userEvent.setup()
+    await screen.findByText('of 3')
+
+    const pageInput = screen.getByRole('textbox', { name: 'Jump to position' })
+    await user.clear(pageInput)
+    await user.type(pageInput, '3{Enter}')
+
+    await waitFor(() =>
+      expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
+        params: { ...defaultParams, pageIndex: 2 },
+      }),
+    )
+    expect(pageInput).toHaveValue('3')
+  })
+
+  it('reverts the page input to the current page when given an out-of-range value', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: { tickets: mockTickets, total: 25 } })
+    renderTicketsPage()
+
+    const user = userEvent.setup()
+    await screen.findByText('of 3')
+
+    const pageInput = screen.getByRole('textbox', { name: 'Jump to position' })
+    await user.clear(pageInput)
+    await user.type(pageInput, '9{Enter}')
+
+    expect(pageInput).toHaveValue('1')
+    expect(apiClient.get).not.toHaveBeenCalledWith('/api/tickets', {
+      params: { ...defaultParams, pageIndex: 8 },
+    })
   })
 
   it('resets to the first page when a filter changes', async () => {
@@ -215,10 +252,10 @@ describe('TicketsPage', () => {
     renderTicketsPage()
 
     const user = userEvent.setup()
-    await screen.findByText('Page 1 of 3')
+    await screen.findByText('of 3')
 
-    await user.click(screen.getByRole('button', { name: 'Next page' }))
-    await screen.findByText('Page 2 of 3')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    expect(await screen.findByRole('textbox', { name: 'Jump to position' })).toHaveValue('2')
 
     await user.click(screen.getByRole('combobox', { name: 'Filter by status' }))
     await user.click(await screen.findByRole('option', { name: 'Resolved' }))
@@ -235,16 +272,14 @@ describe('TicketsPage', () => {
     renderTicketsPage()
 
     const user = userEvent.setup()
-    await screen.findByText('Page 1 of 3')
+    await screen.findByText('of 3')
 
-    expect(screen.getByRole('combobox', { name: 'Rows per page' })).toHaveTextContent(
-      '10 per page',
-    )
+    expect(screen.getByRole('combobox', { name: 'Rows shown' })).toHaveTextContent('10 rows')
 
-    await user.click(screen.getByRole('combobox', { name: 'Rows per page' }))
-    expect(await screen.findByRole('option', { name: '10 per page' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: '20 per page' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: '30 per page' })).toBeInTheDocument()
+    await user.click(screen.getByRole('combobox', { name: 'Rows shown' }))
+    expect(await screen.findByRole('option', { name: '10 rows' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '20 rows' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '30 rows' })).toBeInTheDocument()
   })
 
   it('refetches with the new pageSize and resets to the first page when it changes', async () => {
@@ -252,13 +287,13 @@ describe('TicketsPage', () => {
     renderTicketsPage()
 
     const user = userEvent.setup()
-    await screen.findByText('Page 1 of 3')
+    await screen.findByText('of 3')
 
-    await user.click(screen.getByRole('button', { name: 'Next page' }))
-    await screen.findByText('Page 2 of 3')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    expect(await screen.findByRole('textbox', { name: 'Jump to position' })).toHaveValue('2')
 
-    await user.click(screen.getByRole('combobox', { name: 'Rows per page' }))
-    await user.click(await screen.findByRole('option', { name: '30 per page' }))
+    await user.click(screen.getByRole('combobox', { name: 'Rows shown' }))
+    await user.click(await screen.findByRole('option', { name: '30 rows' }))
 
     await waitFor(() =>
       expect(apiClient.get).toHaveBeenCalledWith('/api/tickets', {
