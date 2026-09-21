@@ -7,7 +7,7 @@ An AI-powered ticket management system. Inbound support emails become tickets th
 - **Client**: React 19 + TypeScript, Vite, Tailwind, shadcn/ui, TanStack Query/Table
 - **Server**: Express + TypeScript (ESM), Prisma + PostgreSQL, pg-boss for background jobs
 - **Auth**: [better-auth](https://www.better-auth.com), email/password, admin/agent roles, no public sign-up
-- **AI**: Vercel AI SDK (`ai` + `@ai-sdk/openai`) with OpenAI's `gpt-5-nano`, for ticket classification, auto-resolution, and drafting/polishing agent replies against the support knowledge base (`server/knowledge-base.md`)
+- **AI**: Vercel AI SDK (`ai` + `@ai-sdk/openai`) with OpenAI's `gpt-5-nano`, powering the AI assistant **Suzhi.ai** (name set in `server/src/lib/aiAgent.ts`) — ticket classification, auto-resolution, and drafting/polishing agent replies against the support knowledge base (`server/knowledge-base.md`)
 - **core**: a shared package of `zod` schemas/types used by both `client` and `server`
 
 See [`tech-stack.md`](tech-stack.md) for the originally planned stack (a couple of pieces there, like SendGrid/Mailgun email delivery and Claude-based classification, are aspirational and not wired up yet) and [`implementation-plan.md`](implementation-plan.md) for the phased build-out.
