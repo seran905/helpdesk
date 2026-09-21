@@ -1,11 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
+import { Sparkles } from 'lucide-react'
 import { createReplySchema, type CreateReplyInput } from 'core'
 import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import ErrorMessage from '@/components/ErrorMessage'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { apiClient } from '@/lib/api-client'
 
@@ -75,12 +75,13 @@ function ReplyForm({ ticketId }: ReplyFormProps) {
   }
 
   return (
-    <form className="flex flex-col gap-2" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <Label htmlFor="reply-body">Reply</Label>
+    <form className="flex flex-col gap-2.5 pl-9" onSubmit={handleSubmit(onSubmit)} noValidate>
       <Textarea
-        id="reply-body"
+        aria-label="Reply"
+        placeholder="Write a reply…"
         rows={4}
         aria-invalid={errors.body && body?.trim() ? 'true' : 'false'}
+        className="rounded-md border-border bg-background shadow-none"
         {...register('body')}
       />
       {errors.body && body?.trim() && <ErrorMessage>{errors.body.message}</ErrorMessage>}
@@ -94,17 +95,20 @@ function ReplyForm({ ticketId }: ReplyFormProps) {
         </p>
       )}
 
-      <div className="flex gap-2 self-start">
+      <div className="flex items-center gap-2 self-start">
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
+          size="sm"
           onClick={onPolish}
           disabled={!body?.trim() || polishReply.isPending || isSubmitting}
+          className="text-fuchsia-600 hover:bg-fuchsia-500/10 hover:text-fuchsia-600 dark:text-fuchsia-400"
         >
-          {polishReply.isPending ? 'Polishing...' : 'Polish'}
+          <Sparkles />
+          {polishReply.isPending ? 'Polishing…' : 'Polish'}
         </Button>
         <Button type="submit" disabled={!body?.trim() || isSubmitting}>
-          {isSubmitting ? 'Sending...' : 'Send reply'}
+          {isSubmitting ? 'Sending…' : 'Send reply'}
         </Button>
       </div>
     </form>
