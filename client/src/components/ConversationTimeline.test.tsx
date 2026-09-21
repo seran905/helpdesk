@@ -46,15 +46,16 @@ describe('ConversationTimeline', () => {
     expect(bodies[2]).toHaveTextContent('screenshot of the error')
   })
 
-  it('badges agent and AI messages but not customer messages', () => {
+  it('marks each message with its sender role for assistive tech, without showing the label as text', () => {
     render(<ConversationTimeline messages={messages} />)
 
-    const customerMessage = screen.getByText("I can't log in to my account.").closest('div')
-    const agentMessage = screen.getByText('Can you try resetting your password?').closest('div')
+    const customerMessage = screen.getByText("I can't log in to my account.").closest('li')
+    const agentMessage = screen.getByText('Can you try resetting your password?').closest('li')
     const aiMessage = screen
       .getByText('Suggested next step: ask for a screenshot of the error.')
-      .closest('div')
+      .closest('li')
 
+    expect(customerMessage).toHaveTextContent('Customer')
     expect(customerMessage).not.toHaveTextContent('Agent')
     expect(customerMessage).not.toHaveTextContent('AI')
     expect(agentMessage).toHaveTextContent('Agent')

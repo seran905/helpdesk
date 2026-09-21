@@ -104,8 +104,8 @@ describe('TicketDetailPage', () => {
 
     await screen.findByRole('heading', { name: 'Cannot log in' })
 
-    const customerMessage = screen.getByText("I can't log in to my account.").closest('div')
-    const agentMessage = screen.getByText('Can you try resetting your password?').closest('div')
+    const customerMessage = screen.getByText("I can't log in to my account.").closest('li')
+    const agentMessage = screen.getByText('Can you try resetting your password?').closest('li')
 
     expect(customerMessage).not.toHaveTextContent('Agent')
     expect(agentMessage).toHaveTextContent('Agent')
